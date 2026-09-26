@@ -116,7 +116,9 @@ Her tabloda map sayısı, ortalama loot, ortalama maliyet, **net/map**, ortalama
 
 ## 🏦 Stash
 
-Oyunda özel bir stash sekmesini aç, <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd> bas. Uygulama ekranın sol yarısının görüntüsünü alır:
+**Otomatik (önerilen, PoE Overlay yöntemi):** Okumak istediğin sekmeyi **Public** yap ve adını `~price 991 divine` koy (her sekmeye farklı sayı: 992, 993… 990-999 arası). Stash ekranına hesap adını (`İsim#1234`) gir ve **⟳ Yenile**'ye bas. Uygulama trade sitesinden o sekmelerdeki bütün item'ları ve stack sayılarını okur; gem ve unique'ler dahil. Merchant's Tab kullanma, orada item'lar anında satılabilir.
+
+**Ekrandan:** Oyunda özel bir stash sekmesini aç, <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd> bas. Uygulama ekranın sol yarısının görüntüsünü alır:
 
 - Item'ları **ikonlarından** tanır (poe.ninja ikonlarıyla karşılaştırarak, sekme düzeninden bağımsız)
 - Stack sayılarını **OCR** ile okur; okuyamadığı sayıyı kırmızı işaretler, elle girersin

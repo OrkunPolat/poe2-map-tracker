@@ -150,6 +150,8 @@ export interface Settings {
   overlayPos?: { x: number; y: number };
   overlayOpacity: number;
   stashHotkey: string;
+  /** PoE account with discriminator ("Name#1234") for reading public tabs via the trade site. */
+  tradeAccount: string;
 }
 
 export interface PriceTable {
@@ -180,6 +182,8 @@ export interface StashTab {
   category?: string;
   capturedAt: number;
   screenshot: string;
+  /** "trade": read from the public tab on the trade site; otherwise from a screenshot. */
+  source?: "screen" | "trade";
   items: StashItem[];
 }
 

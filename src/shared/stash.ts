@@ -21,6 +21,11 @@ export function upsertTab(stash: StashState, tab: StashTab): StashState {
   return { ...stash, tabs: prev ? stash.tabs.map((t) => (t.id === tab.id ? merged : t)) : [...stash.tabs, merged] };
 }
 
+/** Trade-synced tabs are replaced as a set: a tab no longer public disappears. */
+export function replaceTradeTabs(stash: StashState, tabs: StashTab[]): StashState {
+  return { ...stash, tabs: [...stash.tabs.filter((t) => t.source !== "trade"), ...tabs] };
+}
+
 export function setItemQty(stash: StashState, tabId: string, name: string, qty: number | undefined): StashState {
   return {
     ...stash,

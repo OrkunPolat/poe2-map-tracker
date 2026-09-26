@@ -95,3 +95,35 @@ describe("updater version compare", () => {
   });
 });
 it("formats long durations with hours", async () => { const { formatDuration } = await import("../src/shared/stats"); expect(formatDuration(10_926_000)).toBe("3:02:06"); expect(formatDuration(65_000)).toBe("1:05"); });
+
+describe("trade stash", () => {
+  it("groups listings by tab and sums stacks, ignoring duplicates", async () => {
+    const { aggregateListings } = await import("../src/shared/tradeStash");
+    const l = (id: string, tab: string, type: string, stack?: number, name?: string) => ({ id, listing: { stash: { name: tab } }, item: { typeLine: type, stackSize: stack, name } });
+    const tabs = aggregateListings([
+      l("1", "~price 991 divine", "Divine Orb", 10),
+      l("2", "~price 991 divine", "Divine Orb", 7),
+      l("2", "~price 991 divine", "Divine Orb", 7),
+      l("3", "~price 992 divine", "Omen of Light", 2),
+      l("4", "~price 993 divine", "Rakiata's Flow", undefined, "Rakiata's Flow"),
+    ]);
+    expect(tabs.get("~price 991 divine")!.get("Divine Orb")).toBe(17);
+    expect(tabs.get("~price 992 divine")!.get("Omen of Light")).toBe(2);
+    expect(tabs.get("~price 993 divine")!.get("Rakiata's Flow")).toBe(1);
+  });
+
+  it("rate limiter follows server rules with one request of headroom", async () => {
+    const { RateLimiter } = await import("../src/shared/tradeStash");
+    let t = 0;
+    const rl = new RateLimiter(() => t);
+    rl.update("5:10:60,15:60:300");
+    for (let i = 0; i < 4; i++) {
+      expect(rl.waitMs()).toBe(0);
+      rl.record();
+      t += 100;
+    }
+    expect(rl.waitMs()).toBeGreaterThan(9000); // 5th request in 10s would hit the limit
+    t += 10_000;
+    expect(rl.waitMs()).toBe(0);
+  });
+});

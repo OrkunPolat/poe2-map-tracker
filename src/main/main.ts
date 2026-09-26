@@ -15,7 +15,8 @@ import { LogTail, detectLogPath, readTailLines } from "./logTail";
 import { Store } from "./store";
 import { checkForUpdate, installUpdate } from "./updater";
 import { scanStashTab, shutdownStash } from "./stashScan";
-import { emptyStash, setItemQty, stashValueDiv, upsertTab } from "../shared/stash";
+import { syncTradeTabs } from "./tradeSync";
+import { emptyStash, replaceTradeTabs, setItemQty, stashValueDiv, upsertTab } from "../shared/stash";
 
 // Test hooks: POE2T_DATA isolates the data dir, POE2T_LOG forces a log file, POE2T_SMOKE writes a screenshot and quits.
 if (process.env.POE2T_DATA) app.setPath("userData", resolve(process.env.POE2T_DATA));
@@ -194,9 +195,36 @@ async function readStashTab() {
   push();
 }
 
-/** Re-prices every saved tab and records the total for the history chart. */
+/**
+ * Pulls public tabs from the trade site (when an account is set), re-prices every saved tab
+ * and records the total for the history chart.
+ */
 async function refreshStash() {
+  if (status.stashBusy) return;
   await refreshPrices();
+  const account = store.data.settings.tradeAccount.trim();
+  if (account) {
+    status.stashBusy = true;
+    push();
+    try {
+      const { tabs, truncated } = await syncTradeTabs(store.data.settings.league, account, store.data.prices, USER_AGENT, (text) => {
+        status.stashMessage = { at: Date.now(), ok: true, text };
+        push();
+      });
+      store.data.stash = replaceTradeTabs(store.data.stash ?? emptyStash(), tabs);
+      const items = tabs.reduce((s, t) => s + t.items.length, 0);
+      status.stashMessage = {
+        at: Date.now(),
+        ok: tabs.length > 0 && !truncated,
+        text: tabs.length
+          ? `Trade: ${tabs.length} public sekme, ${items} item okundu.${truncated ? " Bir sekmede 100'den fazla item var, fazlası okunamadı; o sekmeyi ikiye böl." : ""}`
+          : "Trade sitesinde bu hesapta ~price 990-999 divine fiyatlı public sekme bulunamadı. Kurulum adımlarına bak; trade sitesi değişiklikleri birkaç dakika gecikmeyle görür.",
+      };
+    } catch (e) {
+      status.stashMessage = { at: Date.now(), ok: false, text: (e as Error).message };
+    }
+    status.stashBusy = false;
+  }
   const stash = store.data.stash ?? emptyStash();
   if (stash.tabs.length) {
     store.data.stash = { ...stash, history: [...stash.history, { ts: Date.now(), div: stashValueDiv(stash, store.data.prices) }].slice(-500) };
@@ -492,6 +520,7 @@ app.whenReady().then(() => {
   setInterval(() => void refreshPrices(), PRICE_REFRESH_MS);
   void checkUpdate();
   if (process.env.POE2T_STASH_IMAGE) setTimeout(() => void readStashTab(), 3000);
+  if (process.env.POE2T_TRADE_TEST) setTimeout(() => void refreshStash(), 4000);
   setInterval(() => void checkUpdate(), 6 * 60 * 60 * 1000);
 });
 

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { stashValueDiv, tabValueDiv } from "../../shared/stash";
 import type { Snapshot } from "../../shared/ipc";
 import type { PriceTable, StashTab } from "../../shared/types";
@@ -19,7 +20,8 @@ export function StashView({ snap }: { snap: Snapshot }) {
   const total = stashValueDiv(stash, prices);
   const last = stash.history[stash.history.length - 1];
   const prev = stash.history[stash.history.length - 2];
-  const missing = EXPECTED.filter((c) => !stash.tabs.some((t) => t.category === c));
+  // With trade sync the placeholders are noise: the user decides which tabs are public.
+  const missing = settings.tradeAccount ? [] : EXPECTED.filter((c) => !stash.tabs.some((t) => t.category === c));
 
   return (
     <div className="stash">
@@ -40,12 +42,18 @@ export function StashView({ snap }: { snap: Snapshot }) {
           <button className="primary" onClick={() => void api().stashRefresh()}>
             ⟳ Yenile
           </button>
-          <p className="hint">Tüm okunmuş sekmeleri güncel poe.ninja fiyatıyla yeniden hesaplar ve geçmişe kaydeder.</p>
+          <p className="hint">
+            {settings.tradeAccount
+              ? "Public sekmeleri trade sitesinden yeniden okur, güncel poe.ninja fiyatıyla hesaplar ve geçmişe kaydeder."
+              : "Tüm okunmuş sekmeleri güncel poe.ninja fiyatıyla yeniden hesaplar ve geçmişe kaydeder."}
+          </p>
         </div>
       </section>
 
+      <TradeSetup account={settings.tradeAccount} />
+
       <section className="card how">
-        <b>Sekme okumak için:</b> oyunda stash'te bir özel sekmeyi aç (Currency, Ritual, Abyss…) ve{" "}
+        <b>Ya da ekrandan oku:</b> oyunda stash'te bir özel sekmeyi aç (Currency, Ritual, Abyss…) ve{" "}
         <kbd>{settings.stashHotkey}</kbd> bas. Uygulama ekranın sol yarısını okur; item'ları ikonlarından, sayıları OCR ile bulur.
         <br />
         <span className="muted">
@@ -82,18 +90,26 @@ function TabCard({ tab, prices, now }: { tab: StashTab; prices?: PriceTable; now
     (a, b) => (b.qty ?? 0) * (prices?.divByName[b.name] ?? 0) - (a.qty ?? 0) * (prices?.divByName[a.name] ?? 0),
   );
   const unread = tab.items.filter((i) => i.qty == null).length;
+  const trade = tab.source === "trade";
   return (
     <section className="card tab-card">
       <div className="card-head">
-        <h3>{tab.label}</h3>
+        <h3>
+          {tab.label} <span className={`tag ${trade ? "" : "type"}`}>{trade ? "trade" : "ekran"}</span>
+        </h3>
         <b className="gold">{fmtDiv(value)} div</b>
       </div>
       <p className="muted small">
         {ago(tab.capturedAt, now)} · {tab.items.length} item
-        {unread > 0 && <span className="warn"> · {unread} sayı eksik, elle gir</span>} ·{" "}
-        <a href={`shot://img/${encodeURIComponent(tab.screenshot)}`} target="_blank" rel="noreferrer">
-          görüntü
-        </a>
+        {unread > 0 && <span className="warn"> · {unread} sayı eksik, elle gir</span>}
+        {tab.screenshot && (
+          <>
+            {" "}·{" "}
+            <a href={`shot://img/${encodeURIComponent(tab.screenshot)}`} target="_blank" rel="noreferrer">
+              görüntü
+            </a>
+          </>
+        )}
       </p>
       <table className="loot-table">
         <tbody>
@@ -105,6 +121,8 @@ function TabCard({ tab, prices, now }: { tab: StashTab; prices?: PriceTable; now
                 <td>
                   <input
                     className="qty"
+                    disabled={trade}
+                    title={trade ? "Trade sitesinden geliyor; Yenile ile güncellenir" : undefined}
                     type="number"
                     min={0}
                     placeholder="?"
@@ -124,6 +142,38 @@ function TabCard({ tab, prices, now }: { tab: StashTab; prices?: PriceTable; now
       <button className="danger" onClick={() => confirm(`${tab.label} sekmesi silinsin mi?`) && void api().stashDeleteTab(tab.id)}>
         Sekmeyi sil
       </button>
+    </section>
+  );
+}
+
+/** Setup for reading public tabs from the trade site (the PoE Overlay method). */
+function TradeSetup({ account }: { account: string }) {
+  const [value, setValue] = useState(account);
+  const valid = /^.+#\d{4}$/.test(value.trim()) || value.trim() === "";
+  return (
+    <section className="card how">
+      <b>Otomatik okuma (trade sitesi üzerinden)</b>
+      <ol className="steps">
+        <li>
+          Oyunda okumak istediğin sekmeye sağ tık → <b>Public</b> yap. <span className="warn">Merchant's Tab kullanma</span> (orada item'lar anında satılabilir).
+        </li>
+        <li>
+          Sekmenin adını <code>~price 991 divine</code> yap. Her sekmeye farklı sayı ver: <code>992</code>, <code>993</code>… (990-999 arası).
+          Bu fahiş fiyat item'ların sadece trade sitesinde görünmesini sağlar, kimse almaz.
+        </li>
+        <li>Hesap adını <b>İsim#1234</b> şeklinde gir (pathofexile.com profilindeki tam ad) ve <b>⟳ Yenile</b>'ye bas.</li>
+      </ol>
+      <div className="row">
+        <input className="grow" placeholder="Hesap adı, ör. Orkun#1234" value={value} onChange={(e) => setValue(e.target.value)} />
+        <button className="primary" disabled={!valid || value.trim() === account} onClick={() => void api().setSettings({ tradeAccount: value.trim() })}>
+          Kaydet
+        </button>
+      </div>
+      {!valid && <p className="warn">Ad #1234 gibi 4 haneli ekle bitmeli.</p>}
+      <p className="hint">
+        Trade sitesi değişiklikleri birkaç dakika gecikmeyle görür. Gem, unique gibi her item okunur (100 item/sekme sınırı). Giriş yapılmaz, şifre ya da POESESSID
+        istenmez; sadece herkese açık trade verisi okunur ve trade sitesinin istek sınırlarına uyulur.
+      </p>
     </section>
   );
 }

@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS: Settings = {
   overlayHotkey: "Ctrl+Shift+O",
   overlayOpacity: 0.9,
   stashHotkey: "Ctrl+Shift+T",
+  tradeAccount: "",
 };
 
 export class Store {
