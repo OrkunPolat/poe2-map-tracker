@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Snapshot } from "../shared/ipc";
-import { formatDuration, runValueDiv } from "../shared/stats";
+import { formatDuration, runValueDiv, tabletSetupKey } from "../shared/stats";
 import { liveMapTime } from "../shared/tracker";
 import { api, fmtDiv, useNow, useSnapshot } from "./api";
 import { LootPanel } from "./components/LootPanel";
@@ -23,7 +23,8 @@ const LOCATION_LABEL = { map: "Map", hideout: "Hideout", town: "Kasaba", other: 
 export function App() {
   const snap = useSnapshot();
   const now = useNow();
-  const [tab, setTab] = useState<Tab>("track");
+  // "#tab=runs" opens a specific tab (used by preview screenshots).
+  const [tab, setTab] = useState<Tab>(() => (TABS.find(([id]) => location.hash === `#tab=${id}`)?.[0] ?? "track"));
   if (!snap) return <div className="loading">Yükleniyor…</div>;
   const { state, prices, status, settings } = snap;
 
@@ -133,7 +134,7 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
               </div>
               <div>
                 <span>Tablet</span>
-                <b>{current.tablets.map((t) => t.type).join(", ") || "–"}</b>
+                <b className="kpi-small">{current.tablets.length ? tabletSetupKey(current) : "–"}</b>
               </div>
             </div>
             <LootPanel run={current} favorites={settings.favoriteCurrencies} prices={prices} />

@@ -98,3 +98,25 @@ describe("tracker", () => {
     expect(s.runs[0]!.screenshots).toEqual(["a.png", "b.png"]);
   });
 });
+
+describe("valuable drops", () => {
+  it("adds hand-valued drops to the run value and CSV", () => {
+    let s = play(initialState(), [{ type: "areaGenerated", ts: 0, level: 80, areaId: "MapA", seed: "1" }]);
+    const id = s.runs[0]!.id;
+    s = play(s, [
+      { type: "addLoot", runId: id, name: "Divine Orb", qty: 1, unitDiv: 1 },
+      { type: "addDrop", runId: id, drop: { id: "x1", name: "Mageblood", valueDiv: 20 } },
+      { type: "addDrop", runId: id, drop: { id: "x2", name: "Spectre base", valueDiv: 0.5 } },
+      { type: "removeDrop", runId: id, dropId: "x2" },
+    ]);
+    const run = s.runs[0]!;
+    expect(run.drops).toEqual([{ id: "x1", name: "Mageblood", valueDiv: 20 }]);
+    expect(runValueDiv(run)).toBe(21);
+    expect(runsToCsv(s.runs)).toContain("Mageblood (20 div)");
+  });
+
+  it("values runs saved before drops existed", () => {
+    const old = { id: "o", startedAt: 0, areaId: "", areaName: "", tablets: [], loot: [], deaths: 0, mapTimeMs: 0, screenshots: [], note: "" };
+    expect(runValueDiv(old)).toBe(0);
+  });
+});

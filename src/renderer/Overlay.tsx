@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { formatDuration, runValueDiv } from "../shared/stats";
+import { formatDuration, runValueDiv, tabletSetupKey } from "../shared/stats";
 import { liveMapTime } from "../shared/tracker";
 import { api, fmtDiv, useNow, useSnapshot } from "./api";
 
@@ -49,7 +49,7 @@ export function Overlay() {
           {active!.waystone?.stats.itemRarity != null && ` · R ${active!.waystone.stats.itemRarity}%`}
           {active!.waystone?.stats.packSize != null && ` · P ${active!.waystone.stats.packSize}%`}
           {" · "}
-          {active!.tablets.map((t) => t.type).join(", ") || "tabletsiz"}
+          {active!.tablets.length ? tabletSetupKey(active!) : "tabletsiz"}
         </div>
       ) : (
         <div className="ov-line">

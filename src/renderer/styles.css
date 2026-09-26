@@ -157,3 +157,12 @@ html.overlay body { font-size: 12px; user-select: none; }
 .ov-loot b { color: var(--gold-2); }
 .ov-total { margin-top: 5px; color: var(--muted); }
 .ov-total b { color: var(--gold-2); }
+
+.drops { margin-top: 12px; padding-top: 4px; border-top: 1px dashed var(--line); }
+.div-input { width: 90px; }
+button.preset { padding: 4px 9px; font-size: 12px; }
+button.preset.on { border-color: var(--gold); color: var(--gold-2); }
+button.primary { background: #3a2e1a; border-color: var(--gold); color: var(--gold-2); }
+button:disabled { opacity: .45; cursor: default; }
+.drop-name { color: var(--unique); font-weight: 600; }
+.kpis b.kpi-small { font-size: 14px; line-height: 1.3; }

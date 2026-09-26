@@ -122,6 +122,12 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
         loot: r.loot.map((l) => (l.name === ev.name ? { ...l, qty: ev.qty } : l)).filter((l) => l.qty > 0),
       }));
 
+    case "addDrop":
+      return updateRun(state, ev.runId, (r) => ({ ...r, drops: [...(r.drops ?? []), ev.drop] }));
+
+    case "removeDrop":
+      return updateRun(state, ev.runId, (r) => ({ ...r, drops: (r.drops ?? []).filter((d) => d.id !== ev.dropId) }));
+
     case "setNote":
       return updateRun(state, ev.runId, (r) => ({ ...r, note: ev.note }));
 

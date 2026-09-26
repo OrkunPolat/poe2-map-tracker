@@ -35,6 +35,12 @@ export function useNow(): number {
 
 export const fmtDiv = (v: number) => (Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2));
 
+/** Small amounts read better in Exalted ("0.00 div" hides a 1-ex drop). */
+export function fmtValue(div: number, exPerDiv?: number): string {
+  if (exPerDiv && div > 0 && div < 0.1) return `${Math.round(div * exPerDiv).toLocaleString("tr-TR")} ex`;
+  return `${fmtDiv(div)} div`;
+}
+
 export function fmtEx(div: number, exPerDiv?: number): string {
   return exPerDiv ? `${Math.round(div * exPerDiv).toLocaleString("tr-TR")} ex` : "";
 }

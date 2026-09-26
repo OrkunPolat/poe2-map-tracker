@@ -266,6 +266,11 @@ function handleUi(ev: UiEvent) {
       return apply({ ...ev, unitDiv: priceOf(ev.name) });
     case "finishRun":
       return apply({ type: "finishRun", ts: Date.now() });
+    case "addDrop": {
+      const name = ev.name.trim();
+      if (!name || !Number.isFinite(ev.valueDiv) || ev.valueDiv < 0) return;
+      return apply({ type: "addDrop", runId: ev.runId, drop: { id: `d${Date.now().toString(36)}`, name, valueDiv: ev.valueDiv } });
+    }
     default:
       return apply(ev);
   }
@@ -341,7 +346,7 @@ function createWindow() {
   });
   const devUrl = process.env.VITE_DEV_URL;
   if (devUrl) void win.loadURL(devUrl);
-  else void win.loadFile(join(__dirname, "renderer", "index.html"));
+  else void win.loadFile(join(__dirname, "renderer", "index.html"), process.env.POE2T_TAB ? { hash: `tab=${process.env.POE2T_TAB}` } : {});
 
   const smokeOut = process.env.POE2T_SMOKE;
   if (smokeOut) {

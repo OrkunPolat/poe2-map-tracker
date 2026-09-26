@@ -58,7 +58,14 @@ export function RunsTable({
                   <td>{tabletSetupKey(r)}</td>
                   <td>{formatDuration(liveMapTime(state, r, now))}</td>
                   <td>{r.deaths || ""}</td>
-                  <td className="loot-cell">{r.loot.map((l) => `${l.qty} ${l.name.replace(/ Orb$/, "")}`).join(", ")}</td>
+                  <td className="loot-cell">
+                    {(r.drops ?? []).map((d) => (
+                      <span key={d.id} className="drop-name">
+                        {d.name}{" "}
+                      </span>
+                    ))}
+                    {r.loot.map((l) => `${l.qty} ${l.name.replace(/ Orb$/, "")}`).join(", ")}
+                  </td>
                   <td className="num">
                     <b>{fmtDiv(runValueDiv(r, prices))}</b>
                   </td>

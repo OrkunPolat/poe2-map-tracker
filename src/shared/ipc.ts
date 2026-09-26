@@ -30,6 +30,8 @@ export type UiEvent =
   | { type: "addLoot"; runId: string; name: string; qty: number }
   | { type: "setLootQty"; runId: string; name: string; qty: number }
   | { type: "setNote"; runId: string; note: string }
+  | { type: "addDrop"; runId: string; name: string; valueDiv: number }
+  | { type: "removeDrop"; runId: string; dropId: string }
   | { type: "finishRun" }
   | { type: "deleteRun"; runId: string }
   | { type: "removePendingTablet"; index: number }

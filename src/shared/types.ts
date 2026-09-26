@@ -65,6 +65,13 @@ export interface LootEntry {
   unitDiv?: number;
 }
 
+/** A non-currency drop valued by hand, e.g. a Mageblood at 20 div. */
+export interface ValuableDrop {
+  id: string;
+  name: string;
+  valueDiv: number;
+}
+
 export interface Run {
   id: string;
   startedAt: number;
@@ -76,6 +83,8 @@ export interface Run {
   waystone?: WaystoneInfo;
   tablets: TabletInfo[];
   loot: LootEntry[];
+  /** Optional for data saved before this field existed. */
+  drops?: ValuableDrop[];
   deaths: number;
   /** Time spent inside this map's instance(s), excluding hideout trips. */
   mapTimeMs: number;
@@ -135,6 +144,8 @@ export type TrackerEvent =
   | { type: "addLoot"; runId: string; name: string; qty: number; unitDiv?: number }
   | { type: "setLootQty"; runId: string; name: string; qty: number }
   | { type: "setNote"; runId: string; note: string }
+  | { type: "addDrop"; runId: string; drop: ValuableDrop }
+  | { type: "removeDrop"; runId: string; dropId: string }
   | { type: "finishRun"; ts: number }
   | { type: "deleteRun"; runId: string }
   | { type: "removePendingTablet"; index: number }

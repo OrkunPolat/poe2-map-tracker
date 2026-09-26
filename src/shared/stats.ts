@@ -2,7 +2,12 @@ import type { PriceTable, Run } from "./types";
 
 /** Uses the price recorded with the loot; falls back to today's price for items added without one. */
 export function runValueDiv(run: Run, prices?: PriceTable): number {
-  return run.loot.reduce((sum, l) => sum + l.qty * (l.unitDiv ?? prices?.divByName[l.name] ?? 0), 0);
+  const loot = run.loot.reduce((sum, l) => sum + l.qty * (l.unitDiv ?? prices?.divByName[l.name] ?? 0), 0);
+  return loot + dropsValueDiv(run);
+}
+
+export function dropsValueDiv(run: Run): number {
+  return (run.drops ?? []).reduce((sum, d) => sum + d.valueDiv, 0);
 }
 
 export function unpricedLoot(run: Run, prices?: PriceTable): string[] {
@@ -59,7 +64,7 @@ export function formatDuration(ms: number): string {
 const CSV_HEADERS = [
   "Tarih", "Map", "Area Level", "Waystone Tier", "Waystone Rarity", "Item Rarity %", "Item Quantity %",
   "Pack Size %", "Magic Monsters %", "Rare Monsters %", "Monster Effectiveness %", "Delirious %",
-  "Waystone Modlari", "Tablet Setup", "Tablet Modlari", "Sure (dk)", "Olum", "Loot", "Toplam (div)", "Not",
+  "Waystone Modlari", "Tablet Setup", "Tablet Modlari", "Sure (dk)", "Olum", "Loot", "Degerli Itemler", "Toplam (div)", "Not",
 ];
 
 function cell(v: unknown): string {
@@ -90,9 +95,10 @@ export function runsToCsv(runs: Run[], prices?: PriceTable): string {
       (r.mapTimeMs / 60000).toFixed(1).replace(".", ","),
       r.deaths,
       r.loot.map((l) => `${l.qty}x ${l.name}`).join(", "),
+      (r.drops ?? []).map((d) => `${d.name} (${d.valueDiv} div)`).join(", "),
       runValueDiv(r, prices).toFixed(2).replace(".", ","),
       r.note,
     ].map(cell).join(";");
   });
-  return "﻿" + [CSV_HEADERS.join(";"), ...rows].join("\r\n");
+  return "\uFEFF" + [CSV_HEADERS.join(";"), ...rows].join("\r\n");
 }

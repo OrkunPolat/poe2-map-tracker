@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { runValueDiv, unpricedLoot } from "../../shared/stats";
 import type { PriceTable, Run } from "../../shared/types";
-import { api, fmtDiv, fmtEx } from "../api";
+import { api, fmtDiv, fmtEx, fmtValue } from "../api";
 
 export function LootPanel({ run, favorites, prices }: { run: Run; favorites: string[]; prices?: PriceTable }) {
   const [query, setQuery] = useState("");
@@ -89,17 +89,91 @@ export function LootPanel({ run, favorites, prices }: { run: Run; favorites: str
                       }
                     />
                   </td>
-                  <td className="num">{unit != null ? `${fmtDiv(l.qty * unit)} div` : "fiyat yok"}</td>
+                  <td className="num">{unit != null ? fmtValue(l.qty * unit, prices?.exPerDiv) : "fiyat yok"}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       )}
+      <DropsEditor run={run} />
+
       <div className="total">
         Toplam <b>{fmtDiv(total)} div</b> <span className="muted">{fmtEx(total, prices?.exPerDiv)}</span>
         {missing.length > 0 && <span className="warn"> · fiyatsız: {missing.join(", ")}</span>}
       </div>
+    </div>
+  );
+}
+
+const PRESETS = [0.5, 1, 5, 10, 20];
+
+/** Hand-valued non-currency drops (uniques, bases, jewels...) entered in Divine. */
+function DropsEditor({ run }: { run: Run }) {
+  const [value, setValue] = useState("");
+  const [name, setName] = useState("");
+  const div = Number(value.replace(",", "."));
+  const valid = name.trim().length > 0 && value.trim() !== "" && Number.isFinite(div) && div >= 0;
+
+  const submit = () => {
+    if (!valid) return;
+    void api().dispatch({ type: "addDrop", runId: run.id, name: name.trim(), valueDiv: div });
+    setValue("");
+    setName("");
+  };
+
+  return (
+    <div className="drops">
+      <h4>Değerli item (unique, base, jewel…)</h4>
+      <div className="row">
+        <input
+          className="div-input"
+          inputMode="decimal"
+          placeholder="Değer"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+        />
+        <span className="muted">div</span>
+        {PRESETS.map((p) => (
+          <button key={p} className={`preset ${div === p ? "on" : ""}`} onClick={() => setValue(String(p))}>
+            {p}
+          </button>
+        ))}
+      </div>
+      <div className="row">
+        <input
+          className="grow"
+          placeholder="Item adı: Mageblood, Headhunter, Spectre…"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+        />
+        <button className="primary" disabled={!valid} onClick={submit}>
+          Ekle
+        </button>
+      </div>
+      {(run.drops ?? []).length > 0 && (
+        <table className="loot-table">
+          <tbody>
+            {run.drops!.map((d) => (
+              <tr key={d.id}>
+                <td className="drop-name">{d.name}</td>
+                <td className="num">{fmtDiv(d.valueDiv)} div</td>
+                <td className="num">
+                  <button
+                    className="icon"
+                    title="Sil"
+                    onClick={() => void api().dispatch({ type: "removeDrop", runId: run.id, dropId: d.id })}
+                  >
+                    ×
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
