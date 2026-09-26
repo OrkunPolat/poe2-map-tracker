@@ -14,7 +14,7 @@ export const STASH_CATEGORIES = [
 
 interface ExchangeOverview {
   core?: { primary?: string };
-  lines?: Array<{ id: string; primaryValue?: number }>;
+  lines?: Array<{ id: string; primaryValue?: number; volumePrimaryValue?: number; sparkline?: { totalChange?: number } }>;
   items?: Array<{ id: string; name: string; image?: string }>;
 }
 
@@ -52,6 +52,8 @@ export async function fetchPrices(league: string, fetchFn: typeof fetch, userAge
   const divByName: Record<string, number> = { "Divine Orb": 1 };
   const byCategory: Record<string, Array<{ name: string; div: number }>> = {};
   const imageByName: Record<string, string> = {};
+  const changeByName: Record<string, number> = {};
+  const volumeByName: Record<string, number> = {};
   const errors: string[] = [];
   await Promise.all(
     PRICE_TYPES.map(async (type) => {
@@ -62,6 +64,13 @@ export async function fetchPrices(league: string, fetchFn: typeof fetch, userAge
         const data = (await res.json()) as ExchangeOverview;
         const prices = overviewToPrices(data);
         for (const it of data.items ?? []) if (it.image && prices[it.name] != null) imageByName[it.name] = `https://web.poecdn.com${it.image}`;
+        const nameById = new Map((data.items ?? []).map((i) => [i.id, i.name]));
+        for (const line of data.lines ?? []) {
+          const n = nameById.get(line.id);
+          if (!n) continue;
+          if (typeof line.sparkline?.totalChange === "number") changeByName[n] = line.sparkline.totalChange;
+          if (typeof line.volumePrimaryValue === "number") volumeByName[n] = line.volumePrimaryValue;
+        }
         Object.assign(divByName, prices);
         byCategory[type] = Object.entries(prices)
           .map(([name, div]) => ({ name, div }))
@@ -74,5 +83,5 @@ export async function fetchPrices(league: string, fetchFn: typeof fetch, userAge
   if (errors.length === PRICE_TYPES.length) throw new Error(`poe.ninja unreachable (${errors[0]})`);
   divByName["Divine Orb"] = 1;
   const ex = divByName["Exalted Orb"];
-  return { league, fetchedAt: Date.now(), divByName, byCategory, imageByName, exPerDiv: ex ? 1 / ex : undefined };
+  return { league, fetchedAt: Date.now(), divByName, byCategory, imageByName, changeByName, volumeByName, exPerDiv: ex ? 1 / ex : undefined };
 }

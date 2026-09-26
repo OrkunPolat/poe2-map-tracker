@@ -3,6 +3,9 @@ import { stashValueDiv, tabValueDiv } from "../../shared/stash";
 import type { Snapshot } from "../../shared/ipc";
 import type { PriceTable, StashTab } from "../../shared/types";
 import { api, fmtDiv, fmtEx, fmtValue } from "../api";
+import { TabCheckList } from "./Onboarding";
+import { Trend } from "./Trend";
+import { sellHints } from "../../shared/trends";
 
 /** Special tabs worth reading (Map, Gem and Unique tabs are left out on purpose). */
 const EXPECTED = ["Currency", "Essences", "Abyss", "Ritual", "Delirium", "Breach", "Expedition", "Fragments", "Runes", "SoulCores", "Idols"];
@@ -50,7 +53,17 @@ export function StashView({ snap }: { snap: Snapshot }) {
         </div>
       </section>
 
+      <SellHints snap={snap} />
+
       <TradeSetup account={settings.tradeAccount} />
+
+      {status.tabCheck && status.tabCheck.issues.some((i) => i.kind !== "ok" && i.kind !== "missing") && (
+        <section className="card how">
+          <b>Sekme kontrolü: düzeltilmesi gerekenler</b>
+          <TabCheckList issues={status.tabCheck.issues.filter((i) => i.kind !== "missing")} />
+          <button onClick={() => void api().checkTabSetup()}>Tam kontrol (diğer public sekmeler dahil)</button>
+        </section>
+      )}
 
       <section className="card how">
         <b>Ya da ekrandan oku:</b> oyunda stash'te bir özel sekmeyi aç (Currency, Ritual, Abyss…) ve{" "}
@@ -132,7 +145,9 @@ function TabCard({ tab, prices, now }: { tab: StashTab; prices?: PriceTable; now
                     }
                   />
                 </td>
-                <td className="num muted">{unit != null ? fmtValue(unit, prices?.exPerDiv) : "–"}</td>
+                <td className="num muted">
+                  {unit != null ? fmtValue(unit, prices?.exPerDiv) : "–"} <Trend change={prices?.changeByName?.[it.name]} />
+                </td>
                 <td className="num">{unit != null && it.qty ? fmtValue(unit * it.qty, prices?.exPerDiv) : ""}</td>
               </tr>
             );
@@ -175,6 +190,54 @@ function TradeSetup({ account }: { account: string }) {
         Trade sitesi değişiklikleri birkaç dakika gecikmeyle görür. Gem, unique gibi her item okunur (100 item/sekme sınırı). Giriş yapılmaz, şifre ya da POESESSID
         istenmez; sadece herkese açık trade verisi okunur ve trade sitesinin istek sınırlarına uyulur.
       </p>
+    </section>
+  );
+}
+
+/** Exiled Tools-style: what in the stash is losing or gaining value this week. */
+function SellHints({ snap }: { snap: Snapshot }) {
+  const hints = sellHints(snap.stash, snap.prices);
+  if (hints.length === 0) return null;
+  const sell = hints.filter((h) => h.advice === "sell").slice(0, 6);
+  const hold = hints.filter((h) => h.advice === "hold").slice(0, 6);
+  const row = (h: (typeof hints)[number]) => (
+    <tr key={h.name}>
+      <td>{h.name}</td>
+      <td className="num">{h.qty}×</td>
+      <td className="num">{fmtDiv(h.valueDiv)} div</td>
+      <td className="num">
+        <Trend change={h.change} />
+      </td>
+      <td className={`num ${h.impactDiv < 0 ? "warn" : "ok"}`}>
+        {h.impactDiv > 0 ? "+" : ""}
+        {fmtDiv(h.impactDiv)} div
+      </td>
+    </tr>
+  );
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h3>Fiyat trendi (7 gün)</h3>
+        <span className="muted small">poe.ninja · değeri 1 div üstü ve %10'dan fazla oynayanlar</span>
+      </div>
+      <div className="hint-grid">
+        {sell.length > 0 && (
+          <div>
+            <h4 className="warn">Düşüyor, satmayı düşün</h4>
+            <table className="loot-table">
+              <tbody>{sell.map(row)}</tbody>
+            </table>
+          </div>
+        )}
+        {hold.length > 0 && (
+          <div>
+            <h4 className="ok">Yükseliyor, tutmaya değer</h4>
+            <table className="loot-table">
+              <tbody>{hold.map(row)}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

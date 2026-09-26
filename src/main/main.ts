@@ -1,5 +1,5 @@
 import {
-  BrowserWindow, app, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, net, protocol, screen, shell,
+  BrowserWindow, ClipboardItem, app, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, net, protocol, screen, shell,
 } from "electron";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
@@ -15,7 +15,11 @@ import { LogTail, detectLogPath, readTailLines } from "./logTail";
 import { Store } from "./store";
 import { checkForUpdate, installUpdate } from "./updater";
 import { scanStashTab, shutdownStash } from "./stashScan";
-import { syncTradeTabs } from "./tradeSync";
+import { otherPublicTabs, syncTradeTabs } from "./tradeSync";
+import { checkTabs } from "../shared/tabCheck";
+import bundledWaystoneMods from "../shared/data/waystoneMods.json";
+import { parseWaystoneMods } from "../shared/waystoneModsParse.mjs";
+import type { WaystoneModFamily } from "../shared/waystoneDanger";
 import { emptyStash, replaceTradeTabs, setItemQty, stashValueDiv, upsertTab } from "../shared/stash";
 
 // Test hooks: POE2T_DATA isolates the data dir, POE2T_LOG forces a log file, POE2T_SMOKE writes a screenshot and quits.
@@ -37,7 +41,9 @@ const shotsDir = () => join(app.getPath("userData"), "screenshots");
 
 function snapshot(): Snapshot {
   const { state, settings, prices } = store.data;
-  return { state, settings, prices, stash: store.data.stash ?? emptyStash(), status, debug, now: Date.now() };
+  const bundled = bundledWaystoneMods as { source: string; fetchedAt: string; families: WaystoneModFamily[] };
+  const waystoneMods = store.data.waystoneMods ? { source: bundled.source, ...store.data.waystoneMods } : bundled;
+  return { state, settings, prices, stash: store.data.stash ?? emptyStash(), waystoneMods, status, debug, now: Date.now() };
 }
 
 let pushTimer: NodeJS.Timeout | undefined;
@@ -199,7 +205,7 @@ async function readStashTab() {
  * Pulls public tabs from the trade site (when an account is set), re-prices every saved tab
  * and records the total for the history chart.
  */
-async function refreshStash() {
+async function refreshStash(fullCheck = false) {
   if (status.stashBusy) return;
   await refreshPrices();
   const account = store.data.settings.tradeAccount.trim();
@@ -207,10 +213,17 @@ async function refreshStash() {
     status.stashBusy = true;
     push();
     try {
-      const { tabs, truncated } = await syncTradeTabs(store.data.settings.league, account, store.data.prices, USER_AGENT, (text) => {
+      const { tabs, truncated, seen } = await syncTradeTabs(store.data.settings.league, account, store.data.prices, USER_AGENT, (text) => {
         status.stashMessage = { at: Date.now(), ok: true, text };
         push();
       });
+      let others: typeof seen = [];
+      if (fullCheck) {
+        status.stashMessage = { at: Date.now(), ok: true, text: "Diğer public sekmeler kontrol ediliyor…" };
+        push();
+        others = await otherPublicTabs(store.data.settings.league, account, new Set(seen.map((t) => t.stashName)), USER_AGENT);
+      }
+      status.tabCheck = { at: Date.now(), full: fullCheck, issues: checkTabs(seen, others) };
       store.data.stash = replaceTradeTabs(store.data.stash ?? emptyStash(), tabs);
       const items = tabs.reduce((s, t) => s + t.items.length, 0);
       status.stashMessage = {
@@ -425,6 +438,39 @@ function setupIpc() {
   ipcMain.handle("prices:refresh", () => refreshPrices());
   ipcMain.handle("update:check", () => checkUpdate());
   ipcMain.handle("stash:refresh", () => refreshStash());
+  ipcMain.handle("stash:checkSetup", () => refreshStash(true));
+  ipcMain.handle("waystoneMods:update", async () => {
+    const res = await net.fetch("https://poe2db.tw/us/Waystones", { headers: { "User-Agent": USER_AGENT } });
+    if (!res.ok) throw new Error(`poe2db HTTP ${res.status}`);
+    const families = parseWaystoneMods(await res.text());
+    // A layout change on poe2db would parse to almost nothing; keep the old list then.
+    if (families.length < 20) throw new Error("poe2db sayfası beklenen formatta değil, liste güncellenmedi.");
+    store.data.waystoneMods = { fetchedAt: new Date().toISOString(), families };
+    store.save();
+    push();
+    return `${families.length} mod güncellendi`;
+  });
+  ipcMain.on("clipboard:write", (_, text: string) => void clipboard.writeText(text));
+  ipcMain.handle("capture:rect", async (_, rect: { x: number; y: number; width: number; height: number }, mode: "save" | "copy") => {
+    if (!win) return "";
+    const img = await win.webContents.capturePage({
+      x: Math.round(rect.x),
+      y: Math.round(rect.y),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+    });
+    if (mode === "copy") {
+      await clipboard.write([new ClipboardItem({ "image/png": new Blob([new Uint8Array(img.toPNG())], { type: "image/png" }) })]);
+      return "Panoya kopyalandı";
+    }
+    const res = await dialog.showSaveDialog(win, {
+      defaultPath: `poe2-oturum-${new Date().toISOString().slice(0, 10)}.png`,
+      filters: [{ name: "PNG", extensions: ["png"] }],
+    });
+    if (res.canceled || !res.filePath) return "";
+    writeFileSync(res.filePath, img.toPNG());
+    return `Kaydedildi: ${res.filePath}`;
+  });
   ipcMain.handle("stash:setQty", (_, tabId: string, name: string, qty: number | undefined) => {
     store.data.stash = setItemQty(store.data.stash ?? emptyStash(), tabId, name, qty);
     store.save();
@@ -476,7 +522,7 @@ function createWindow() {
   });
   const devUrl = process.env.VITE_DEV_URL;
   if (devUrl) void win.loadURL(devUrl);
-  else void win.loadFile(join(__dirname, "renderer", "index.html"), process.env.POE2T_TAB ? { hash: `tab=${process.env.POE2T_TAB}` } : {});
+  else void win.loadFile(join(__dirname, "renderer", "index.html"), process.env.POE2T_HASH ? { hash: process.env.POE2T_HASH } : process.env.POE2T_TAB ? { hash: `tab=${process.env.POE2T_TAB}` } : {});
 
   const smokeOut = process.env.POE2T_SMOKE;
   if (smokeOut) {
@@ -520,7 +566,11 @@ app.whenReady().then(() => {
   setInterval(() => void refreshPrices(), PRICE_REFRESH_MS);
   void checkUpdate();
   if (process.env.POE2T_STASH_IMAGE) setTimeout(() => void readStashTab(), 3000);
-  if (process.env.POE2T_TRADE_TEST) setTimeout(() => void refreshStash(), 4000);
+  if (process.env.POE2T_TRADE_TEST)
+    setTimeout(async () => {
+      await refreshStash(process.env.POE2T_TRADE_TEST === "full");
+      console.log("[tabcheck]", JSON.stringify(status.tabCheck?.issues));
+    }, 4000);
   setInterval(() => void checkUpdate(), 6 * 60 * 60 * 1000);
 });
 

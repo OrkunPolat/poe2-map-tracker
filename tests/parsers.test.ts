@@ -138,3 +138,51 @@ describe("trade tab names", () => {
     expect(tabDisplayName("~price 1 divine")).toBeUndefined();
   });
 });
+
+describe("waystone danger", () => {
+  it("matches marked poe2db mods against a copied waystone and builds a stash regex", async () => {
+    const data = (await import("../src/shared/data/waystoneMods.json")).default as { families: import("../src/shared/waystoneDanger").WaystoneModFamily[] };
+    const { dangerousMatches, avoidRegex } = await import("../src/shared/waystoneDanger");
+    const fams = data.families;
+    expect(fams.length).toBeGreaterThan(40);
+    const crit = fams.find((f) => f.danger[0]!.startsWith("Monsters have #% increased Critical Hit Chance"))!;
+    const maxRes = fams.find((f) => f.danger[0] === "#% maximum Player Resistances")!;
+    const marked = new Set([crit.id, maxRes.id]);
+    // Lines as the game prints them on a waystone.
+    const hits = dangerousMatches(["Monsters have 363% increased Critical Hit Chance", "-6% maximum Player Resistances", "Monsters are Evasive"], fams, marked);
+    expect(hits.map((h) => h.line)).toEqual(["Monsters have 363% increased Critical Hit Chance", "-6% maximum Player Resistances"]);
+    const { regex, missing } = avoidRegex([crit, maxRes], fams);
+    expect(regex.startsWith('"!')).toBe(true);
+    expect(missing).toEqual([]);
+    expect(regex.length).toBeLessThan(40);
+    // Every fragment must appear verbatim in the text the game prints for that mod.
+    const frags = regex.slice(2, -1).split("|");
+    const printed = ["monsters have 363% increased critical hit chance", "-6% maximum player resistances"];
+    for (const f of frags) expect(printed.some((p) => p.includes(f))).toBe(true);
+    const { shortLabel } = await import("../src/shared/waystoneDanger");
+    expect(shortLabel("Monsters have #% increased Critical Hit Chance")).toBe("Critical Hit Chance");
+    expect(shortLabel("#% maximum Player Resistances")).toBe("maximum Player Resistances");
+  });
+});
+
+describe("tab setup check", () => {
+  it("flags duplicates, unnamed tabs, wrong notes, content mismatches and missing tabs", async () => {
+    const { checkTabs } = await import("../src/shared/tabCheck");
+    const issues = checkTabs(
+      [
+        { stashName: "~price 991 divine Expedition", price: { amount: 991, currency: "divine" }, items: 20, category: "Expedition" },
+        { stashName: "~price 992 divine Ritual", price: { amount: 992, currency: "divine" }, items: 12, category: "Expedition" },
+        { stashName: "~price 993 divine", price: { amount: 993, currency: "divine" }, items: 4, category: "Breach" },
+        { stashName: "~price 993 divine Abyss", price: { amount: 993, currency: "divine" }, items: 5, category: "Abyss" },
+      ],
+      [{ stashName: "~price 994 exalted Delirium", price: { amount: 994, currency: "exalted" }, items: 3 }],
+    );
+    const kinds = issues.map((i) => i.kind);
+    expect(issues.find((i) => i.kind === "ok" && i.tab.includes("Expedition"))).toBeTruthy();
+    expect(issues.find((i) => i.kind === "contentMismatch")).toMatchObject({ named: "Ritual", content: "Expedition" });
+    expect(issues.find((i) => i.kind === "duplicatePrice")).toMatchObject({ price: 993 });
+    expect(kinds).toContain("noName");
+    expect(issues.find((i) => i.kind === "wrongNote")).toMatchObject({ tab: "~price 994 exalted Delirium" });
+    expect(issues.filter((i) => i.kind === "missing").map((i) => (i as { suggested: string }).suggested)).toContain("~price 990 divine Currency");
+  });
+});

@@ -9,6 +9,9 @@ import { LootPanel } from "./components/LootPanel";
 import { RunsTable } from "./components/RunsTable";
 import { DebugView, SettingsView } from "./components/SettingsView";
 import { StashView } from "./components/StashView";
+import { WaystoneView } from "./components/WaystoneView";
+import { dangerLines } from "./danger";
+import { Onboarding } from "./components/Onboarding";
 import { StatsView } from "./components/StatsView";
 import { Screenshots, TabletCard, WaystoneCard } from "./components/Items";
 
@@ -17,6 +20,7 @@ const TABS = [
   ["runs", "Geçmiş"],
   ["stats", "İstatistik"],
   ["stash", "Stash"],
+  ["waystone", "Waystone"],
   ["settings", "Ayarlar"],
   ["debug", "Debug"],
 ] as const;
@@ -28,12 +32,16 @@ export function App() {
   const snap = useSnapshot();
   const now = useNow();
   // "#tab=runs" opens a specific tab (used by preview screenshots).
+  const [wizard, setWizard] = useState<boolean | undefined>(undefined);
   const [tab, setTab] = useState<Tab>(() => (TABS.find(([id]) => location.hash.split(":")[0] === `#tab=${id}`)?.[0] ?? "track"));
   if (!snap) return <div className="loading">Yükleniyor…</div>;
   const { state, prices, status, settings } = snap;
+  // First launch opens the setup wizard once; Settings can reopen it.
+  const showWizard = wizard ?? ((!settings.onboarded && !location.hash.includes("tab=")) || location.hash.includes("wizard="));
 
   return (
     <div className="app">
+      {showWizard && <Onboarding snap={snap} onClose={() => setWizard(false)} />}
       <header>
         <div className="brand">PoE2 Map Tracker</div>
         <nav>
@@ -81,7 +89,8 @@ export function App() {
         {tab === "runs" && <RunsTable state={state} prices={prices} favorites={settings.favoriteCurrencies} now={now} />}
         {tab === "stats" && <StatsView runs={state.runs} prices={prices} gapMin={settings.sessionGapMin} />}
         {tab === "stash" && <StashView snap={snap} />}
-        {tab === "settings" && <SettingsView snap={snap} />}
+        {tab === "waystone" && <WaystoneView snap={snap} />}
+        {tab === "settings" && <SettingsView snap={snap} onWizard={() => setWizard(true)} />}
         {tab === "debug" && <DebugView snap={snap} />}
       </main>
     </div>
@@ -119,7 +128,7 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
           Oyunda waystone ve tabletlerin üstüne gelip <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> yap (ya da <kbd>Ctrl</kbd>+<kbd>C</kbd>). Map'e girdiğinde bu setup o map'e bağlanır.
         </p>
         <h4>Waystone</h4>
-        {pending.waystone ? <WaystoneCard w={pending.waystone} /> : <p className="muted">Henüz kopyalanmadı</p>}
+        {pending.waystone ? <WaystoneCard w={pending.waystone} danger={dangerLines(snap, pending.waystone)} /> : <p className="muted">Henüz kopyalanmadı</p>}
         <h4>Tabletler ({pending.tablets.length})</h4>
         {pending.tablets.length === 0 && <p className="muted">Henüz kopyalanmadı</p>}
         {pending.tablets.map((t, i) => (

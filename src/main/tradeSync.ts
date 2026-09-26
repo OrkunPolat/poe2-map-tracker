@@ -4,6 +4,7 @@ import {
 } from "../shared/tradeStash";
 import { STASH_CATEGORIES } from "../shared/prices";
 import type { PriceTable, StashTab } from "../shared/types";
+import type { SeenTab } from "../shared/tabCheck";
 
 const API = "https://www.pathofexile.com/api/trade2";
 const searchLimiter = new RateLimiter();
@@ -55,7 +56,7 @@ export async function syncTradeTabs(
   prices: PriceTable | undefined,
   userAgent: string,
   progress: TradeSyncProgress,
-): Promise<{ tabs: StashTab[]; truncated: boolean }> {
+): Promise<{ tabs: StashTab[]; truncated: boolean; seen: SeenTab[] }> {
   const searchUrl = `${API}/search/poe2/${encodeURIComponent(league)}`;
   const waitNote = (s: number) => progress(`Trade sınırı: ${s} sn bekleniyor…`);
 
@@ -85,6 +86,8 @@ export async function syncTradeTabs(
   const categoryOf = (name: string) => STASH_CATEGORIES.find((c) => prices?.byCategory?.[c]?.some((i) => i.name === name));
   const now = Date.now();
   const tabs: StashTab[] = [];
+  const seen: SeenTab[] = [];
+  const priceOfTab = new Map(listings.map((l) => [l.listing.stash?.name ?? "?", l.listing.price]));
   for (const [tabName, items] of aggregateListings(listings)) {
     const votes = new Map<string, number>();
     for (const n of items.keys()) {
@@ -92,6 +95,7 @@ export async function syncTradeTabs(
       if (c) votes.set(c, (votes.get(c) ?? 0) + 1);
     }
     const category = [...votes.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    seen.push({ stashName: tabName, price: priceOfTab.get(tabName), items: items.size, category });
     tabs.push({
       id: `trade:${tabName}`,
       // The user's own name wins ("~price 991 divine Expedition" -> "Expedition"); else the item category.
@@ -103,5 +107,30 @@ export async function syncTradeTabs(
       items: [...items.entries()].map(([name, qty]) => ({ name, qty })),
     });
   }
-  return { tabs, truncated };
+  return { tabs, truncated, seen };
+}
+
+/**
+ * The account's other public tabs (any price), to spot tabs meant for tracking whose price note
+ * is off (wrong currency, out of range, missing). Samples the first 40 listings only.
+ */
+export async function otherPublicTabs(league: string, account: string, tracked: Set<string>, userAgent: string): Promise<SeenTab[]> {
+  const body = {
+    query: { status: { option: "any" }, filters: { trade_filters: { filters: { account: { input: account } } } } },
+    sort: { price: "desc" },
+  };
+  const s = await call<SearchResult>(searchLimiter, `${API}/search/poe2/${encodeURIComponent(league)}`, userAgent, body);
+  const byTab = new Map<string, SeenTab>();
+  const ids = s.result.slice(0, 40);
+  for (let i = 0; i < ids.length; i += 10) {
+    const r = await call<{ result: Array<TradeListing | null> }>(fetchLimiter, `${API}/fetch/${ids.slice(i, i + 10).join(",")}?query=${s.id}`, userAgent);
+    for (const l of r.result) {
+      const name = l?.listing.stash?.name;
+      if (!l || !name || tracked.has(name)) continue;
+      const t = byTab.get(name) ?? { stashName: name, price: l.listing.price, items: 0 };
+      t.items++;
+      byTab.set(name, t);
+    }
+  }
+  return [...byTab.values()];
 }

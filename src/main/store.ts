@@ -2,6 +2,7 @@ import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { initialState } from "../shared/tracker";
 import type { PriceTable, Settings, StashState, TrackerState } from "../shared/types";
+import type { WaystoneModFamily } from "../shared/waystoneDanger";
 
 export interface Persisted {
   version: 1;
@@ -9,6 +10,8 @@ export interface Persisted {
   settings: Settings;
   prices?: PriceTable;
   stash?: StashState;
+  /** Newer waystone mod list fetched from poe2db; the bundled one is used otherwise. */
+  waystoneMods?: { fetchedAt: string; families: WaystoneModFamily[] };
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -31,6 +34,8 @@ export const DEFAULT_SETTINGS: Settings = {
   overlayOpacity: 0.9,
   stashHotkey: "Ctrl+Shift+T",
   tradeAccount: "",
+  dangerousMods: [],
+  onboarded: false,
 };
 
 export class Store {

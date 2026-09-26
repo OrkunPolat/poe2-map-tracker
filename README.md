@@ -36,6 +36,11 @@ Her map'e **hangi waystone ve tabletlerle** girdiğini, **süreyi**, **ölümler
 | ⏱️ **Gerçek saatlik** | Oturum bazlı div/saat: hideout, trade ve craft süresi de dahil |
 | 📊 **İstatistik** | Oturumlar, farm, map, 3 vs 4 tablet, setup, saatlik ve waystone stat aralıkları |
 | 🏦 **Stash değeri** | Özel sekmeleri (Currency, Ritual, Abyss, Delirium, Breach, Expedition, Essence, Fragment, Rune…) ekrandan okur, poe.ninja ile fiyatlar |
+| ⚠️ **Waystone tehlike uyarısı** | poe2db'deki tüm waystone modlarından build'ine ölümcül olanları işaretle; `Ctrl+C` yapınca overlay'de uyarı, stash için arama kodu |
+| 📉 **Fiyat trendi** | Stash'indeki item'ların 7 günlük fiyat değişimi, sat/tut önerisi, farm'ların kârlılık trendi |
+| 🗓️ **Gün çizelgesi** | Gün içinde hangi saatte hangi map'e girdiğin, farm renkleriyle zaman çizelgesi |
+| 🖼️ **Oturum kartı** | Oturum özetini tek tıkla PNG olarak kaydet ya da panoya kopyala |
+| 🧭 **Kurulum sihirbazı** | İlk açılışta adım adım kurulum ve public sekmelerin otomatik kontrolü |
 | 🔄 **Tek tık güncelleme** | Yeni sürüm çıkınca "Güncelle"ye bas, exe kendini yeniler; tekrar indirmen gerekmez |
 | 🖥️ **Overlay** | Oyun üstünde her zaman görünen panel, tıklayınca oyundan odağı çalmaz |
 | 📈 **Canlı fiyat** | poe.ninja PoE2 fiyatları, Divine bazında, 30 dk'da bir |
@@ -116,6 +121,8 @@ Her tabloda map sayısı, ortalama loot, ortalama maliyet, **net/map**, ortalama
 
 ## 🏦 Stash
 
+İlk açılıştaki **kurulum sihirbazı** önerilen sekme adlarını kopyalanabilir şekilde verir ve **Kontrol et** ile public sekmelerini tarar: isimsiz sekme, aynı fiyatı kullanan iki sekme, yanlış para birimi, adıyla içeriği uyuşmayan sekme ve eksik farm sekmeleri ayrı ayrı gösterilir. Her **Yenile**'de bu kontrol tekrar yapılır.
+
 **Otomatik (önerilen, PoE Overlay yöntemi):** Okumak istediğin sekmeyi **Public** yap ve adını fiyat + isim koy: `~price 991 divine Expedition`, `~price 992 divine Ritual`, `~price 993 divine Abyss`… (her sekmeye farklı sayı, 990-999 arası; sondaki isim uygulamada sekme adı olur). Stash ekranına hesap adını (`İsim#1234`) gir ve **⟳ Yenile**'ye bas. Uygulama trade sitesinden o sekmelerdeki bütün item'ları ve stack sayılarını okur; gem ve unique'ler dahil. Merchant's Tab kullanma, orada item'lar anında satılabilir.
 
 **Ekrandan:** Oyunda özel bir stash sekmesini aç, <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd> bas. Uygulama ekranın sol yarısının görüntüsünü alır:
@@ -126,6 +133,13 @@ Her tabloda map sayısı, ortalama loot, ortalama maliyet, **net/map**, ortalama
 
 > [!NOTE]
 > Sekmeleri uygulama kendisi değiştiremez: oyuna tıklama göndermek GGG kurallarına aykırı. Her sekme için bir kez tuşa basman yeterli. İlk okumada ~500 ikon ve OCR dil dosyası indirilir (internet gerekir). Gem, Map ve Unique sekmeleri desteklenmiyor.
+
+## ⚠️ Waystone tehlike uyarısı
+
+**Waystone** sekmesinde poe2db'den alınan bütün waystone modları var (tier aralıkları ve verdikleri ödüllerle). Build'in için tehlikeli olanları işaretle:
+
+- Waystone'a <kbd>Ctrl</kbd>+<kbd>C</kbd> yaptığında işaretli mod varsa hazırlık kartında ve overlay'de kırmızı uyarı çıkar
+- İşaretli modlardan bir **stash arama kodu** üretilir (`"!..."`); waystone sekmesinde <kbd>Ctrl</kbd>+<kbd>F</kbd> ile yapıştırınca tehlikeli waystone'lar söner
 
 ## 🔒 Güvenli mi?
 

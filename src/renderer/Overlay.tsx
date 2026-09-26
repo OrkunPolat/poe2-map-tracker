@@ -4,6 +4,7 @@ import { currentSession, groupSessions, sessionNetPerHour } from "../shared/sess
 import { liveMapTime } from "../shared/tracker";
 import type { Run } from "../shared/types";
 import { api, fmtDiv, useNow, useSnapshot } from "./api";
+import { dangerLabels } from "./danger";
 
 /** Compact always-on-top panel shown over the game (top-right by default). */
 export function Overlay() {
@@ -49,6 +50,10 @@ export function Overlay() {
         </button>
       </div>
 
+      {(() => {
+        const d = dangerLabels(snap, inMap ? active!.waystone : pending.waystone);
+        return d.length ? <div className="ov-danger">⚠ {d.join(" · ")}</div> : null;
+      })()}
       {inMap ? (
         <div className="ov-line">
           {active!.waystone ? `T${active!.waystone.stats.tier ?? "?"}` : "Waystone yok"}

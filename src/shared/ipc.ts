@@ -1,4 +1,5 @@
 import type { PriceTable, Settings, StashState, TrackerState } from "./types";
+import type { WaystoneModFamily } from "./waystoneDanger";
 
 export interface UpdateInfo {
   version: string;
@@ -27,6 +28,8 @@ export interface Status {
   /** Set while a stash tab is being read. */
   stashBusy?: boolean;
   stashMessage?: { at: number; ok: boolean; text: string };
+  /** Result of the last public-tab setup check. */
+  tabCheck?: { at: number; full: boolean; issues: import("./tabCheck").TabIssue[] };
   leagues: string[];
 }
 
@@ -41,6 +44,7 @@ export interface Snapshot {
   settings: Settings;
   prices?: PriceTable;
   stash: StashState;
+  waystoneMods: { source: string; fetchedAt: string; families: WaystoneModFamily[] };
   status: Status;
   debug: DebugInfo;
   now: number;
@@ -76,6 +80,11 @@ export interface Api {
   stashRefresh(): Promise<void>;
   stashSetQty(tabId: string, name: string, qty: number | undefined): Promise<void>;
   stashDeleteTab(tabId: string): Promise<void>;
+  updateWaystoneMods(): Promise<string>;
+  checkTabSetup(): Promise<void>;
+  /** Screenshot of a region of the main window (CSS pixels) to a PNG file or the clipboard. */
+  captureRect(rect: { x: number; y: number; width: number; height: number }, mode: "save" | "copy"): Promise<string>;
+  copyText(text: string): void;
   installUpdate(): Promise<void>;
   resizeOverlay(height: number): void;
   showMain(): void;

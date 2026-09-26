@@ -5,9 +5,15 @@ import {
 } from "../../shared/stats";
 import type { PriceTable, Run, WaystoneStats } from "../../shared/types";
 import { fmtDiv } from "../api";
+import { farmTrends } from "../../shared/trends";
+import { Trend } from "./Trend";
+import { DayTimeline } from "./DayTimeline";
+import { SessionCard } from "./SessionCard";
+import type { Session } from "../../shared/sessions";
 
 const VIEWS = [
   ["session", "Oturumlar"],
+  ["day", "Gün"],
   ["farm", "Farm"],
   ["map", "Map"],
   ["count", "3 vs 4 tablet"],
@@ -33,6 +39,7 @@ export function StatsView({ runs, prices, gapMin }: { runs: Run[]; prices?: Pric
       </div>
 
       {view === "session" && <SessionTable runs={runs} prices={prices} gapMin={gapMin} />}
+      {view === "day" && <DayTimeline runs={runs} prices={prices} />}
       {view === "map" && (
         <SummaryTable
           title="Map"
@@ -41,7 +48,12 @@ export function StatsView({ runs, prices, gapMin }: { runs: Run[]; prices?: Pric
         />
       )}
       {view === "farm" && (
-        <SummaryTable title="Farm" rows={summarize(runs, farmKey, prices).sort(byAvgNet)} hint="Farm, en çok kullanılan tablet türüne göre belirlenir (eşitse ikisi birden)." />
+        <SummaryTable
+          title="Farm"
+          rows={summarize(runs, farmKey, prices).sort(byAvgNet)}
+          trends={farmTrends(runs, prices)}
+          hint="Farm, en çok kullanılan tablet türüne göre belirlenir (eşitse ikisi birden). Trend: bu farm'dan düşen loot'un fiyatı son 7 günde ne kadar değişti."
+        />
       )}
       {view === "count" && (
         <SummaryTable
@@ -74,7 +86,7 @@ function StatTable({ title, stat, step, runs, prices }: { title: string; stat: k
   return <SummaryTable title={title} rows={rows.sort((a, b) => a.order - b.order)} />;
 }
 
-function SummaryTable({ title, rows, hint }: { title: string; rows: GroupSummary[]; hint?: string }) {
+function SummaryTable({ title, rows, hint, trends }: { title: string; rows: GroupSummary[]; hint?: string; trends?: Map<string, number> }) {
   const best = Math.max(...rows.map((r) => r.avgNet), 0.0001);
   return (
     <div className="table-wrap stat-block">
@@ -106,7 +118,9 @@ function SummaryTable({ title, rows, hint }: { title: string; rows: GroupSummary
         <tbody>
           {rows.map((r) => (
             <tr key={r.key}>
-              <td>{r.key}</td>
+              <td>
+                {r.key} {trends && <Trend change={trends.get(r.key)} />}
+              </td>
               <td className="num">{r.runs}</td>
               <td className="num">{fmtDiv(r.totalDiv)}</td>
               <td className="num">{fmtDiv(r.avgDiv)}</td>
@@ -132,6 +146,7 @@ function SummaryTable({ title, rows, hint }: { title: string; rows: GroupSummary
 /** Farm sessions with wall-clock rate: hideout, trade and crafting time count too. */
 function SessionTable({ runs, prices, gapMin }: { runs: Run[]; prices?: PriceTable; gapMin: number }) {
   const sessions = groupSessions(runs, gapMin * 60_000, prices).reverse();
+  const [card, setCard] = useState<Session | undefined>(() => (location.hash.includes("card") ? sessions[0] : undefined));
   const fmtTime = (ts: number) => new Date(ts).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
   return (
     <div className="table-wrap stat-block">
@@ -153,7 +168,7 @@ function SessionTable({ runs, prices, gapMin }: { runs: Run[]; prices?: PriceTab
             const farms = summarize(s.runs, farmKey, prices).sort((a, b) => b.runs - a.runs).map((g) => `${g.key} (${g.runs})`);
             const rate = sessionNetPerHour(s);
             return (
-              <tr key={s.start}>
+              <tr key={s.start} className="clickable" onClick={() => setCard(s)} title="Özet kartını aç">
                 <td>
                   {fmtTime(s.start)} – {new Date(s.end).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
                 </td>
@@ -174,8 +189,9 @@ function SessionTable({ runs, prices, gapMin }: { runs: Run[]; prices?: PriceTab
         </tbody>
       </table>
       <p className="hint">
-        {gapMin} dakikadan uzun ara yeni oturum başlatır (Ayarlar'dan değişir). "Gerçek net / saat" hideout, trade ve craft süresini de sayar; "Map içi" zamanın ne kadarının map'te geçtiğini gösterir.
+        Satıra tıkla: paylaşılabilir özet kartı. {gapMin} dakikadan uzun ara yeni oturum başlatır (Ayarlar'dan değişir). "Gerçek net / saat" hideout, trade ve craft süresini de sayar; "Map içi" zamanın ne kadarının map'te geçtiğini gösterir.
       </p>
+      {card && <SessionCard session={card} prices={prices} onClose={() => setCard(undefined)} />}
     </div>
   );
 }

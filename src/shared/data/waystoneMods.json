@@ -1,0 +1,1059 @@
+{
+ "source": "https://poe2db.tw/us/Waystones",
+ "fetchedAt": "2026-09-26T20:03:51.751Z",
+ "families": [
+  {
+   "id": "P:Abyssal Monsters grant #% increased Experience",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Abyssal Monsters grant #% increased Experience"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Abyssal Monsters grant (50-100)% increased Experience"
+    ]
+   ]
+  },
+  {
+   "id": "P:Area contains # additional Abysses",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Area contains # additional Abysses"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Area contains (2-3) additional Abysses"
+    ]
+   ]
+  },
+  {
+   "id": "P:Abysses spawn #% increased Monsters",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Abysses spawn #% increased Monsters"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Abysses spawn (50-100)% increased Monsters"
+    ]
+   ]
+  },
+  {
+   "id": "P:Area is overrun by the Abyssal / # additional Rare Monsters are spawned from Abysses / Area contains # additional Abysses",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Area is overrun by the Abyssal",
+    "# additional Rare Monsters are spawned from Abysses",
+    "Area contains # additional Abysses"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Area is overrun by the Abyssal",
+     "3 additional Rare Monsters are spawned from Abysses",
+     "Area contains (14-18) additional Abysses"
+    ]
+   ]
+  },
+  {
+   "id": "P:Abysses lead to an Abyssal Boss",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Abysses lead to an Abyssal Boss"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Abysses lead to an Abyssal Boss"
+    ]
+   ]
+  },
+  {
+   "id": "P:Area contains # additional Incubator Queens",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Area contains # additional Incubator Queens"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Area contains 1 additional Incubator Queens"
+    ]
+   ]
+  },
+  {
+   "id": "P:Abyss Pits have #% chance to spawn all Monsters as at least Magic / Abyss Cracks have #% chance to spawn all Monsters as at least Magic",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Abyss Pits have #% chance to spawn all Monsters as at least Magic",
+    "Abyss Cracks have #% chance to spawn all Monsters as at least Magic"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Abyss Pits have (50-80)% chance to spawn all Monsters as at least Magic",
+     "Abyss Cracks have (40-60)% chance to spawn all Monsters as at least Magic"
+    ]
+   ]
+  },
+  {
+   "id": "P:Abysses lead to an Abyssal Depths",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Abysses lead to an Abyssal Depths"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Abysses lead to an Abyssal Depths"
+    ]
+   ]
+  },
+  {
+   "id": "P:Abyssal Monsters have increased Difficulty and Reward for each closed Pit",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Abyssal Monsters have increased Difficulty and Reward for each closed Pit"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Abyssal Monsters have increased Difficulty and Reward for each closed Pit"
+    ]
+   ]
+  },
+  {
+   "id": "P:Abyss Pits in Area always have Rewards",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Abyss Pits in Area always have Rewards"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Abyss Pits in Area always have Rewards"
+    ]
+   ]
+  },
+  {
+   "id": "P:Natural Rare Monsters in Area have # extra Abyssal Modifiers",
+   "affix": "Prefix",
+   "desecrated": true,
+   "danger": [
+    "Natural Rare Monsters in Area have # extra Abyssal Modifiers"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Natural Rare Monsters in Area have 1 extra Abyssal Modifiers"
+    ]
+   ]
+  },
+  {
+   "id": "S:Natural Rare Monsters in Area Eat the Souls of slain Monsters in their Presence / Players steal the Eaten Souls of Slain Rare Monsters in Area",
+   "affix": "Suffix",
+   "desecrated": true,
+   "danger": [
+    "Natural Rare Monsters in Area Eat the Souls of slain Monsters in their Presence",
+    "Players steal the Eaten Souls of Slain Rare Monsters in Area"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Natural Rare Monsters in Area Eat the Souls of slain Monsters in their Presence",
+     "Players steal the Eaten Souls of Slain Rare Monsters in Area"
+    ]
+   ]
+  },
+  {
+   "id": "S:Players and their Minions deal no damage for # out of every # seconds",
+   "affix": "Suffix",
+   "desecrated": true,
+   "danger": [
+    "Players and their Minions deal no damage for # out of every # seconds"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Players and their Minions deal no damage for 3 out of every 10 seconds"
+    ]
+   ]
+  },
+  {
+   "id": "S:Players have #% less Movement and Skill Speed for each time they've used a Skill Recently",
+   "affix": "Suffix",
+   "desecrated": true,
+   "danger": [
+    "Players have #% less Movement and Skill Speed for each time they've used a Skill Recently"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Players have 3% less Movement and Skill Speed for each time they've used a Skill Recently"
+    ]
+   ]
+  },
+  {
+   "id": "S:Monsters inflict # Grasping Vines on Hit",
+   "affix": "Suffix",
+   "desecrated": true,
+   "danger": [
+    "Monsters inflict # Grasping Vines on Hit"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Monsters inflict 1 Grasping Vines on Hit"
+    ]
+   ]
+  },
+  {
+   "id": "S:Players are Marked for Death for # seconds / after killing a Rare or Unique monster",
+   "affix": "Suffix",
+   "desecrated": true,
+   "danger": [
+    "Players are Marked for Death for # seconds",
+    "after killing a Rare or Unique monster"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Players are Marked for Death for 10 seconds",
+     "after killing a Rare or Unique monster"
+    ]
+   ]
+  },
+  {
+   "id": "S:Area has patches of Mana Siphoning Ground",
+   "affix": "Suffix",
+   "desecrated": true,
+   "danger": [
+    "Area has patches of Mana Siphoning Ground"
+   ],
+   "rewards": [],
+   "tiers": [
+    [
+     "Area has patches of Mana Siphoning Ground"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters deal #% of Damage as Extra Fire",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters deal #% of Damage as Extra Fire"
+   ],
+   "rewards": [
+    "Monsters have 16% more Effectiveness",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters deal (5-9)% of Damage as Extra Fire"
+    ],
+    [
+     "Monsters deal (10-14)% of Damage as Extra Fire"
+    ],
+    [
+     "Monsters deal (15-19)% of Damage as Extra Fire"
+    ],
+    [
+     "Monsters deal (20-24)% of Damage as Extra Fire"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters deal #% of Damage as Extra Cold",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters deal #% of Damage as Extra Cold"
+   ],
+   "rewards": [
+    "14% more Rarity of Items found in this Area",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters deal (5-9)% of Damage as Extra Cold"
+    ],
+    [
+     "Monsters deal (10-14)% of Damage as Extra Cold"
+    ],
+    [
+     "Monsters deal (15-19)% of Damage as Extra Cold"
+    ],
+    [
+     "Monsters deal (20-24)% of Damage as Extra Cold"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters deal #% of Damage as Extra Lightning",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters deal #% of Damage as Extra Lightning"
+   ],
+   "rewards": [
+    "8% more Pack size",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters deal (5-9)% of Damage as Extra Lightning"
+    ],
+    [
+     "Monsters deal (10-14)% of Damage as Extra Lightning"
+    ],
+    [
+     "Monsters deal (15-19)% of Damage as Extra Lightning"
+    ],
+    [
+     "Monsters deal (20-24)% of Damage as Extra Lightning"
+    ]
+   ]
+  },
+  {
+   "id": "P:#% increased Monster Damage",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "#% increased Monster Damage"
+   ],
+   "rewards": [
+    "25% more Magic and Rare Monsters",
+    "Rare Monsters have 25% more chance of Monster Modifiers",
+    "20% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "(5-9)% increased Monster Damage"
+    ],
+    [
+     "(10-14)% increased Monster Damage"
+    ],
+    [
+     "(15-19)% increased Monster Damage"
+    ],
+    [
+     "(20-24)% increased Monster Damage"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters have #% increased Attack, Cast and Movement Speed",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters have #% increased Attack, Cast and Movement Speed"
+   ],
+   "rewards": [
+    "9% more Pack size",
+    "25% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters have (10-15)% increased Attack, Cast and Movement Speed"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters have #% increased Critical Hit Chance / Monsters have #% Critical Damage Bonus",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters have #% increased Critical Hit Chance",
+    "Monsters have #% Critical Damage Bonus"
+   ],
+   "rewards": [
+    "9% more Pack size",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters have (80-120)% increased Critical Hit Chance",
+     "Monsters have +(11-15)% Critical Damage Bonus"
+    ],
+    [
+     "Monsters have (140-180)% increased Critical Hit Chance",
+     "Monsters have +(16-20)% Critical Damage Bonus"
+    ],
+    [
+     "Monsters have (200-240)% increased Critical Hit Chance",
+     "Monsters have +(21-25)% Critical Damage Bonus"
+    ],
+    [
+     "Monsters have (260-300)% increased Critical Hit Chance",
+     "Monsters have +(26-30)% Critical Damage Bonus"
+    ]
+   ]
+  },
+  {
+   "id": "P:#% more Monster Life",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "#% more Monster Life"
+   ],
+   "rewards": [
+    "23% more Magic and Rare Monsters",
+    "Rare Monsters have 23% more chance of Monster Modifiers",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "(10-14)% more Monster Life"
+    ],
+    [
+     "(15-19)% more Monster Life"
+    ],
+    [
+     "(20-25)% more Monster Life"
+    ],
+    [
+     "(26-30)% more Monster Life"
+    ]
+   ]
+  },
+  {
+   "id": "S:#% Monster Elemental Resistances",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "#% Monster Elemental Resistances"
+   ],
+   "rewards": [
+    "14% more Rarity of Items found in this Area",
+    "10% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "+(20-24)% Monster Elemental Resistances"
+    ],
+    [
+     "+(25-29)% Monster Elemental Resistances"
+    ],
+    [
+     "+(30-34)% Monster Elemental Resistances"
+    ],
+    [
+     "+(35-40)% Monster Elemental Resistances"
+    ]
+   ]
+  },
+  {
+   "id": "S:Monsters are Armoured",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Monsters are Armoured"
+   ],
+   "rewards": [
+    "18% more Magic and Rare Monsters",
+    "Rare Monsters have 18% more chance of Monster Modifiers",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters are Armoured"
+    ]
+   ]
+  },
+  {
+   "id": "S:Monsters are Evasive",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Monsters are Evasive"
+   ],
+   "rewards": [
+    "6% more Pack size",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters are Evasive"
+    ]
+   ]
+  },
+  {
+   "id": "S:Monsters gain #% of maximum Life as Extra maximum Energy Shield",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Monsters gain #% of maximum Life as Extra maximum Energy Shield"
+   ],
+   "rewards": [
+    "13% more Rarity of Items found in this Area",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters gain (12-25)% of maximum Life as Extra maximum Energy Shield"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters have #% chance to Poison on Hit",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters have #% chance to Poison on Hit"
+   ],
+   "rewards": [
+    "7% more Pack size",
+    "10% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters have (13-19)% chance to Poison on Hit"
+    ],
+    [
+     "Monsters have (20-26)% chance to Poison on Hit"
+    ],
+    [
+     "Monsters have (27-33)% chance to Poison on Hit"
+    ],
+    [
+     "Monsters have (34-40)% chance to Poison on Hit"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters have #% chance to inflict Bleeding on Hit",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters have #% chance to inflict Bleeding on Hit"
+   ],
+   "rewards": [
+    "Monsters have 13% more Effectiveness",
+    "10% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters have (5-10)% chance to inflict Bleeding on Hit"
+    ],
+    [
+     "Monsters have (10-15)% chance to inflict Bleeding on Hit"
+    ],
+    [
+     "Monsters have (15-20)% chance to inflict Bleeding on Hit"
+    ],
+    [
+     "Monsters have (20-25)% chance to inflict Bleeding on Hit"
+    ]
+   ]
+  },
+  {
+   "id": "S:Monsters have #% increased Ailment Threshold / Monsters have #% increased Stun Threshold",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Monsters have #% increased Ailment Threshold",
+    "Monsters have #% increased Stun Threshold"
+   ],
+   "rewards": [
+    "Monsters have 13% more Effectiveness",
+    "10% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters have (30-39)% increased Ailment Threshold",
+     "Monsters have (30-39)% increased Stun Threshold"
+    ],
+    [
+     "Monsters have (50-59)% increased Ailment Threshold",
+     "Monsters have (40-49)% increased Stun Threshold"
+    ],
+    [
+     "Monsters have (70-79)% increased Ailment Threshold",
+     "Monsters have (60-69)% increased Stun Threshold"
+    ],
+    [
+     "Monsters have (70-79)% increased Ailment Threshold",
+     "Monsters have (70-79)% increased Stun Threshold"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters Break Armour equal to #% of Physical Damage dealt",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters Break Armour equal to #% of Physical Damage dealt"
+   ],
+   "rewards": [
+    "19% more Magic and Rare Monsters",
+    "Rare Monsters have 19% more chance of Monster Modifiers",
+    "10% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters Break Armour equal to (15-20)% of Physical Damage dealt"
+    ],
+    [
+     "Monsters Break Armour equal to (20-25)% of Physical Damage dealt"
+    ],
+    [
+     "Monsters Break Armour equal to (25-30)% of Physical Damage dealt"
+    ],
+    [
+     "Monsters Break Armour equal to (30-45)% of Physical Damage dealt"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters have #% increased Accuracy Rating",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters have #% increased Accuracy Rating"
+   ],
+   "rewards": [
+    "7% more Pack size",
+    "10% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters have (10-20)% increased Accuracy Rating"
+    ],
+    [
+     "Monsters have (20-30)% increased Accuracy Rating"
+    ],
+    [
+     "Monsters have (30-40)% increased Accuracy Rating"
+    ],
+    [
+     "Monsters have (40-50)% increased Accuracy Rating"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters deal #% of Damage as Extra Chaos",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters deal #% of Damage as Extra Chaos"
+   ],
+   "rewards": [
+    "15% more Rarity of Items found in this Area",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters deal (5-9)% of Damage as Extra Chaos"
+    ],
+    [
+     "Monsters deal (10-14)% of Damage as Extra Chaos"
+    ],
+    [
+     "Monsters deal (15-19)% of Damage as Extra Chaos"
+    ],
+    [
+     "Monsters deal (20-24)% of Damage as Extra Chaos"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters have #% increased Stun Buildup",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters have #% increased Stun Buildup"
+   ],
+   "rewards": [
+    "Monsters have 13% more Effectiveness",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters have (50-60)% increased Stun Buildup"
+    ],
+    [
+     "Monsters have (70-80)% increased Stun Buildup"
+    ],
+    [
+     "Monsters have (90-100)% increased Stun Buildup"
+    ],
+    [
+     "Monsters have (100-110)% increased Stun Buildup"
+    ]
+   ]
+  },
+  {
+   "id": "S:Monster have #% increased Elemental Ailment Application",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Monster have #% increased Elemental Ailment Application"
+   ],
+   "rewards": [
+    "11% more Rarity of Items found in this Area",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monster have (60-79)% increased Elemental Ailment Application"
+    ],
+    [
+     "Monster have (80-99)% increased Elemental Ailment Application"
+    ],
+    [
+     "Monster have (100-119)% increased Elemental Ailment Application"
+    ],
+    [
+     "Monster have (120-130)% increased Elemental Ailment Application"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monsters fire # additional Projectiles",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monsters fire # additional Projectiles"
+   ],
+   "rewards": [
+    "9% more Pack size",
+    "25% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters fire 2 additional Projectiles"
+    ],
+    [
+     "Monsters fire 3 additional Projectiles"
+    ]
+   ]
+  },
+  {
+   "id": "S:Monsters have #% increased Area of Effect",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Monsters have #% increased Area of Effect"
+   ],
+   "rewards": [
+    "20% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters have 50% increased Area of Effect"
+    ]
+   ]
+  },
+  {
+   "id": "S:Players are periodically Cursed with Enfeeble",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Players are periodically Cursed with Enfeeble"
+   ],
+   "rewards": [
+    "Monsters have 16% more Effectiveness",
+    "20% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Players are periodically Cursed with Enfeeble"
+    ]
+   ]
+  },
+  {
+   "id": "S:Players are periodically Cursed with Temporal Chains",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Players are periodically Cursed with Temporal Chains"
+   ],
+   "rewards": [
+    "8% more Pack size",
+    "20% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Players are periodically Cursed with Temporal Chains"
+    ]
+   ]
+  },
+  {
+   "id": "S:Players are periodically Cursed with Elemental Weakness",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Players are periodically Cursed with Elemental Weakness"
+   ],
+   "rewards": [
+    "13% more Rarity of Items found in this Area",
+    "20% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Players are periodically Cursed with Elemental Weakness"
+    ]
+   ]
+  },
+  {
+   "id": "S:Area has patches of Ignited Ground",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Area has patches of Ignited Ground"
+   ],
+   "rewards": [
+    "Monsters have 15% more Effectiveness",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Area has patches of Ignited Ground"
+    ],
+    [
+     "Area has patches of Ignited Ground"
+    ],
+    [
+     "Area has patches of Ignited Ground"
+    ],
+    [
+     "Area has patches of Ignited Ground"
+    ]
+   ]
+  },
+  {
+   "id": "S:Area has patches of Chilled Ground",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Area has patches of Chilled Ground"
+   ],
+   "rewards": [
+    "12% more Rarity of Items found in this Area",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Area has patches of Chilled Ground"
+    ],
+    [
+     "Area has patches of Chilled Ground"
+    ],
+    [
+     "Area has patches of Chilled Ground"
+    ],
+    [
+     "Area has patches of Chilled Ground"
+    ]
+   ]
+  },
+  {
+   "id": "S:Area has patches of Shocked Ground",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Area has patches of Shocked Ground"
+   ],
+   "rewards": [
+    "7% more Pack size",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Area has patches of Shocked Ground"
+    ],
+    [
+     "Area has patches of Shocked Ground"
+    ],
+    [
+     "Area has patches of Shocked Ground"
+    ],
+    [
+     "Area has patches of Shocked Ground"
+    ]
+   ]
+  },
+  {
+   "id": "P:Monster Damage Penetrates #% Elemental Resistances",
+   "affix": "Prefix",
+   "desecrated": false,
+   "danger": [
+    "Monster Damage Penetrates #% Elemental Resistances"
+   ],
+   "rewards": [
+    "16% more Rarity of Items found in this Area",
+    "20% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monster Damage Penetrates (6-8)% Elemental Resistances"
+    ],
+    [
+     "Monster Damage Penetrates (9-11)% Elemental Resistances"
+    ],
+    [
+     "Monster Damage Penetrates (12-14)% Elemental Resistances"
+    ],
+    [
+     "Monster Damage Penetrates (14-16)% Elemental Resistances"
+    ]
+   ]
+  },
+  {
+   "id": "S:#% maximum Player Resistances",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "#% maximum Player Resistances"
+   ],
+   "rewards": [
+    "10% more Pack size",
+    "25% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "(-4--3)% maximum Player Resistances"
+    ],
+    [
+     "(-6--4)% maximum Player Resistances"
+    ],
+    [
+     "(-8--6)% maximum Player Resistances"
+    ],
+    [
+     "(-10--8)% maximum Player Resistances"
+    ]
+   ]
+  },
+  {
+   "id": "S:Players gain #% reduced Flask Charges",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Players gain #% reduced Flask Charges"
+   ],
+   "rewards": [
+    "7% more Pack size",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Players gain (20-24)% reduced Flask Charges"
+    ],
+    [
+     "Players gain (25-29)% reduced Flask Charges"
+    ],
+    [
+     "Players gain (30-35)% reduced Flask Charges"
+    ]
+   ]
+  },
+  {
+   "id": "S:Players have #% less Recovery Rate of Life and Energy Shield",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Players have #% less Recovery Rate of Life and Energy Shield"
+   ],
+   "rewards": [
+    "15% more Rarity of Items found in this Area",
+    "20% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Players have (20-29)% less Recovery Rate of Life and Energy Shield"
+    ],
+    [
+     "Players have (30-35)% less Recovery Rate of Life and Energy Shield"
+    ],
+    [
+     "Players have (36-40)% less Recovery Rate of Life and Energy Shield"
+    ]
+   ]
+  },
+  {
+   "id": "S:Players have #% less Cooldown Recovery Rate",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Players have #% less Cooldown Recovery Rate"
+   ],
+   "rewards": [
+    "12% more Rarity of Items found in this Area",
+    "15% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Players have (15-20)% less Cooldown Recovery Rate"
+    ],
+    [
+     "Players have (20-25)% less Cooldown Recovery Rate"
+    ],
+    [
+     "Players have (25-30)% less Cooldown Recovery Rate"
+    ]
+   ]
+  },
+  {
+   "id": "S:Monsters take #% reduced Extra Damage from Critical Hits",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "Monsters take #% reduced Extra Damage from Critical Hits"
+   ],
+   "rewards": [
+    "18% more Magic and Rare Monsters",
+    "Rare Monsters have 18% more chance of Monster Modifiers",
+    "10% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "Monsters take (15-19)% reduced Extra Damage from Critical Hits"
+    ],
+    [
+     "Monsters take (20-25)% reduced Extra Damage from Critical Hits"
+    ],
+    [
+     "Monsters take (26-30)% reduced Extra Damage from Critical Hits"
+    ]
+   ]
+  },
+  {
+   "id": "S:#% less effect of Curses on Monsters",
+   "affix": "Suffix",
+   "desecrated": false,
+   "danger": [
+    "#% less effect of Curses on Monsters"
+   ],
+   "rewards": [
+    "10% more Rarity of Items found in this Area",
+    "10% more Waystones found in Area"
+   ],
+   "tiers": [
+    [
+     "(20-30)% less effect of Curses on Monsters"
+    ],
+    [
+     "(30-40)% less effect of Curses on Monsters"
+    ],
+    [
+     "(40-50)% less effect of Curses on Monsters"
+    ]
+   ]
+  }
+ ]
+}

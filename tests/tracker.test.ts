@@ -213,3 +213,24 @@ describe("stash state", () => {
     expect(stashValueDiv(s, prices)).toBeCloseTo(40.3);
   });
 });
+
+describe("price trends", () => {
+  it("suggests selling what is falling and holding what is rising, by money impact", async () => {
+    const { sellHints, farmTrends } = await import("../src/shared/trends");
+    const prices = {
+      league: "x", fetchedAt: 0,
+      divByName: { "Omen of Light": 7.5, "Divine Orb": 1, "Breach Splinter": 0.01, "Perfect Flux": 23 },
+      changeByName: { "Omen of Light": -20, "Divine Orb": 0, "Breach Splinter": -50, "Perfect Flux": 15 },
+    };
+    const stash = { history: [], tabs: [{ id: "a", label: "a", capturedAt: 0, screenshot: "", items: [
+      { name: "Omen of Light", qty: 4 }, { name: "Divine Orb", qty: 50 }, { name: "Breach Splinter", qty: 20 }, { name: "Perfect Flux", qty: 1 },
+    ] }] };
+    const hints = sellHints(stash, prices);
+    expect(hints.map((h) => [h.name, h.advice])).toEqual([["Omen of Light", "sell"], ["Perfect Flux", "hold"]]);
+    expect(hints[0]!.impactDiv).toBeCloseTo(30 - 30 / 0.8);
+    const base = { id: "", startedAt: 0, areaId: "", areaName: "", deaths: 0, mapTimeMs: 0, screenshots: [], note: "" };
+    const t = (type: string) => ({ type, rarity: "Magic", name: "", baseType: "", mods: [], raw: type });
+    const trends = farmTrends([{ ...base, tablets: [t("Ritual")], loot: [{ name: "Omen of Light", qty: 1 }, { name: "Divine Orb", qty: 7.5 }] }], prices);
+    expect(trends.get("Ritual")).toBeCloseTo(-10); // half the value fell 20%, half flat
+  });
+});

@@ -3,7 +3,7 @@ import type { Snapshot } from "../../shared/ipc";
 import type { Settings } from "../../shared/types";
 import { api } from "../api";
 
-export function SettingsView({ snap }: { snap: Snapshot }) {
+export function SettingsView({ snap, onWizard }: { snap: Snapshot; onWizard: () => void }) {
   const { settings, status, prices } = snap;
   const set = (patch: Partial<Settings>) => void api().setSettings(patch);
   const [hotkey, setHotkey] = useState(settings.screenshotHotkey);
@@ -14,6 +14,10 @@ export function SettingsView({ snap }: { snap: Snapshot }) {
 
   return (
     <div className="settings">
+      <section>
+        <h3>Kurulum</h3>
+        <button onClick={onWizard}>Kurulum sihirbazını aç</button>
+      </section>
       <section>
         <h3>Client.txt</h3>
         <p className={status.logFound ? "ok" : "warn"}>

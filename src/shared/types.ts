@@ -152,6 +152,10 @@ export interface Settings {
   stashHotkey: string;
   /** PoE account with discriminator ("Name#1234") for reading public tabs via the trade site. */
   tradeAccount: string;
+  /** Waystone mod family ids the user marked as dangerous for their build. */
+  dangerousMods: string[];
+  /** First-run setup finished or skipped. */
+  onboarded: boolean;
 }
 
 export interface PriceTable {
@@ -161,6 +165,10 @@ export interface PriceTable {
   divByName: Record<string, number>;
   /** poe.ninja category -> items sorted by price, most expensive first. */
   byCategory?: Record<string, Array<{ name: string; div: number }>>;
+  /** Item name -> price change over the last 7 days in % (poe.ninja sparkline). */
+  changeByName?: Record<string, number>;
+  /** Item name -> traded volume in Divine over the last day (how liquid it is). */
+  volumeByName?: Record<string, number>;
   /** Item name -> icon URL (poe.ninja CDN), used by the stash reader. */
   imageByName?: Record<string, string>;
   /** Exalted Orbs per Divine Orb. */

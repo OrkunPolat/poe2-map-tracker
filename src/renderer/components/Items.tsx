@@ -12,9 +12,14 @@ const STAT_LABELS: Array<[keyof WaystoneStats, string]> = [
   ["dropChance", "Waystone Drop"],
 ];
 
-export function WaystoneCard({ w }: { w: WaystoneInfo }) {
+export function WaystoneCard({ w, danger = [] }: { w: WaystoneInfo; danger?: string[] }) {
   return (
-    <div className={`item rarity-${w.rarity.toLowerCase()}`}>
+    <div className={`item rarity-${w.rarity.toLowerCase()} ${danger.length ? "danger" : ""}`}>
+      {danger.length > 0 && (
+        <div className="danger-banner">
+          ⚠ Tehlikeli mod{danger.length > 1 ? "lar" : ""}: {danger.join(" · ")}
+        </div>
+      )}
       <div className="item-title">
         <span className="tier">T{w.stats.tier ?? "?"}</span>
         <span>{w.name || w.baseType}</span>
