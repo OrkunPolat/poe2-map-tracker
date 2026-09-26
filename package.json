@@ -1,0 +1,44 @@
+{
+  "name": "poe2-map-tracker",
+  "productName": "PoE2 Map Tracker",
+  "version": "0.1.0",
+  "description": "Path of Exile 2 map, waystone, tablet and loot tracker",
+  "private": true,
+  "main": "dist/main.cjs",
+  "type": "module",
+  "scripts": {
+    "build:main": "node scripts/build-main.mjs",
+    "build:renderer": "vite build",
+    "build": "npm run build:main && npm run build:renderer",
+    "start": "npm run build && electron .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "dist:win": "npm run build && electron-builder --win portable nsis --x64"
+  },
+  "build": {
+    "appId": "dev.orkun.poe2maptracker",
+    "productName": "PoE2 Map Tracker",
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "package.json"],
+    "win": {
+      "target": ["portable", "nsis"],
+      "signAndEditExecutable": false
+    },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "portable": { "artifactName": "PoE2-Map-Tracker-${version}-portable.exe" }
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  }
+}

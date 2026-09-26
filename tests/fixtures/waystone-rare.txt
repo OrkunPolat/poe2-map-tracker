@@ -1,0 +1,28 @@
+Item Class: Waystones
+Rarity: Rare
+Rugged Choice
+Waystone (Tier 15)
+--------
+Waystone Tier: 15
+Waystone Drop Chance: +435% (augmented)
+--------
+Item Level: 79
+--------
+63% increased Gold found in this Area
+72% increased Rarity of Items found in this Area
+Area contains 19 additional packs of Undead
+26% increased Magic Monsters
+28% increased number of Rare Monsters
+Area has patches of Shocked Ground
+Monsters take 37% reduced Extra Damage from Critical Hits
+Area contains an additional Essence
++50% Monster Elemental Resistances
+Monsters have 98% increased Ailment Threshold
+Monsters have 200% increased Freeze Buildup
+Monsters have 200% increased Ignite Chance
+Monsters have 200% increased Shock Chance
+Monsters have 95% increased Stun Threshold
+--------
+Can be used in a Map Device, allowing you to enter a Map. Waystones can only be used once.
+--------
+Corrupted

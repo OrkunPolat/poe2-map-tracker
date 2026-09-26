@@ -1,0 +1,15 @@
+Item Class: Tablet
+Rarity: Magic
+Plundering Expedition Precursor Tablet of Verisium
+--------
+Item Level: 77
+--------
+{ Implicit Modifier }
+17(12-18) Maps in Range contain Expedition Encounters (implicit)
+--------
+{ Prefix Modifier "Plundering" }
+3(3-7)% increased Quantity of Items found in your Maps
+{ Suffix Modifier "of Verisium" }
+7(5-10)% increased quantity of Artifacts dropped by Monsters in your Maps
+--------
+Can be used in a completed Tower on your Atlas to influence surrounding Maps. Tablets are consumed once placed into a Tower.
