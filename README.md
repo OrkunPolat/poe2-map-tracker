@@ -1,74 +1,145 @@
-# PoE2 Map Tracker
+<p align="center">
+  <img src="docs/banner.svg" alt="PoE2 Map Tracker" width="100%">
+</p>
 
-Path of Exile 2 için map takip aracı. Her map'e hangi waystone ve tabletlerle girdiğini, süreyi, ölümleri, loot'u ve net kârı (loot eksi tablet maliyeti) kaydeder.
+<p align="center">
+  <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/OrkunPolat/poe2-map-tracker?style=for-the-badge&color=c8a45c&labelColor=1c1712&label=s%C3%BCr%C3%BCm" alt="Sürüm"></a>
+  <img src="https://img.shields.io/badge/Windows-x64-c8a45c?style=for-the-badge&labelColor=1c1712&logo=windows&logoColor=c8a45c" alt="Windows">
+  <img src="https://img.shields.io/badge/Path_of_Exile_2-0.5.5-c8a45c?style=for-the-badge&labelColor=1c1712" alt="PoE2 0.5.5">
+  <img src="https://img.shields.io/badge/ToS-uyumlu-6fbf73?style=for-the-badge&labelColor=1c1712" alt="ToS uyumlu">
+</p>
 
-## İndirme
+<p align="center">
+  <a href="../../releases/latest"><b>⬇️ İndir (portable .exe)</b></a> ·
+  <a href="#-nasıl-çalışır">Nasıl çalışır</a> ·
+  <a href="#%EF%B8%8F-kısayollar">Kısayollar</a> ·
+  <a href="#-istatistik">İstatistik</a>
+</p>
 
-[Releases](../../releases) sayfasından son `PoE2-Map-Tracker-x.y.z-portable.exe` dosyasını indir ve çalıştır. Kurulum gerekmez.
-SmartScreen uyarırsa: **More info → Run anyway**.
+---
 
-## Nasıl çalışır
+Her map'e **hangi waystone ve tabletlerle** girdiğini, **süreyi**, **ölümleri**, **loot'u** ve **net kârı** (loot − tablet maliyeti) otomatik kaydeder. Oyunun üstünde duran küçük panelden alt-tab yapmadan loot girersin.
 
-1. **Hazırlık (hideout'ta):** Waystone'un ve tabletlerin üstüne gelip `Ctrl+Alt+C` yap. Uygulama panodan okuyup "Sonraki map hazırlığı" kartına ekler.
-2. **Tablet maliyeti:** Tabletlerin altındaki alana "3 tablet toplam 20 div, her biri 10 kullanım" gir, **Uygula**'ya bas. Map başına maliyet otomatik düşer. Tabletler map'ten sonra hazırlıkta kalır, kullanım hakkı azalır, bitince düşer.
-3. **Map'e gir:** `Client.txt` üzerinden otomatik algılanır. Setup o map'e bağlanır, süre ve ölümler sayılır. Hideout'a gidip aynı map'e dönersen aynı kayıt devam eder.
-4. **Loot gir:** Currency butonlarına tıkla. Unique gibi değerli item'ları **Değerli item** alanına Divine değeri ve adıyla ekle (ör. `20` / `Mageblood`).
-5. **Sonuç:** Geçmiş sekmesinde tablo, İstatistik sekmesinde karşılaştırmalar, Ayarlar'dan Excel için CSV.
+<p align="center">
+  <img src="docs/screenshots/takip.png" alt="Takip ekranı" width="100%">
+</p>
 
-## Kısayollar
+## ✨ Özellikler
+
+| | |
+| :-- | :-- |
+| 🗺️ **Otomatik map takibi** | Map'e giriş/çıkış, area level, süre ve ölümler `Client.txt`'ten gelir |
+| 🪨 **Waystone & tablet** | `Ctrl+Alt+C` ile Rarity, Pack Size, Monster Effectiveness ve tablet türleri kaydedilir |
+| 💰 **Loot & değerli item** | Currency butonları + unique'ler için elle Divine değeri (ör. `20` Mageblood) |
+| 🧾 **Tablet maliyeti** | "3 tablet 20 div, 10 kullanım" gir; map başına maliyet ve net kâr otomatik |
+| 📊 **İstatistik** | Farm, 3 vs 4 tablet, setup, saatlik ve waystone stat aralıkları |
+| 🖥️ **Overlay** | Oyun üstünde her zaman görünen panel, tıklayınca oyundan odağı çalmaz |
+| 📈 **Canlı fiyat** | poe.ninja PoE2 fiyatları, Divine bazında, 30 dk'da bir |
+
+## 🚀 Nasıl çalışır
+
+> [!TIP]
+> Oyunu **Windowed Fullscreen** modda aç, overlay ancak böyle görünür.
+
+1. **Hazırlık** (hideout'ta): Waystone'un ve tabletlerin üstüne gelip `Ctrl+Alt+C` yap. "Sonraki map hazırlığı" kartına düşerler.
+2. **Tablet maliyeti:** Tabletlerin altına toplam fiyatı ve kullanım sayısını gir, **Uygula**. Tabletler map'ten sonra hazırlıkta kalır, hakları azalır, bitince düşer.
+3. **Map'e gir:** Otomatik algılanır. Hideout'a gidip aynı map'e dönersen aynı kayıt devam eder.
+4. **Loot gir:** Butonlara tıkla ya da değerli item'ı Divine değeriyle ekle.
+5. **Sonuç:** Geçmiş'te tablo, İstatistik'te karşılaştırmalar, Ayarlar'dan Excel için CSV.
+
+## ⌨️ Kısayollar
 
 | Tuş | Ne yapar |
-| --- | --- |
-| `Ctrl+Alt+C` (oyunda, item üstünde) | Waystone / tablet'i hazırlığa ekler. `Ctrl+C` de çalışır. |
-| `Ctrl+Shift+O` | Oyun üstü paneli (overlay) aç / kapat |
-| `Ctrl+Shift+S` | Ekran görüntüsü alır, aktif map'e (hideout'taysan sonraki map'e) ekler |
-| Loot butonu: tık / Shift+tık / sağ tık | +1 / +10 / −1 |
-| Değerli item formunda `Enter` / `Esc` | Ekle / vazgeç |
+| :-- | :-- |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd> | Oyunda item üstünde: waystone / tablet'i hazırlığa ekler (<kbd>Ctrl</kbd> + <kbd>C</kbd> de olur) |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd> | Overlay'i aç / kapat |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> | Ekran görüntüsü alır, aktif map'e (hideout'taysan sonraki map'e) ekler |
+| Tık · <kbd>Shift</kbd>+Tık · Sağ tık | Loot butonu: +1 · +10 · −1 |
+| <kbd>Enter</kbd> · <kbd>Esc</kbd> | Değerli item formu: ekle · vazgeç |
 
 Kısayollar Ayarlar'dan değiştirilebilir.
 
-## Overlay (oyun üstü panel)
+## 🖥️ Overlay
 
-Sağ üstte her zaman görünen küçük panel: aktif map, süre, ölüm, waystone, tabletler, ilk 4 loot butonu, map'in ve bu saatin net kârı.
+<img src="docs/screenshots/overlay.png" alt="Overlay" width="340" align="right">
 
-- Tıklamak oyundan klavyeyi almaz, alt-tab gerekmez.
-- **+ Değerli item** ile oyundan çıkmadan item ekleyebilirsin. Yazarken klavye panele geçer, bitince oyuna döner.
-- Sürükleyerek taşınır, yeri hatırlanır. Ayarlar'dan opaklık ve "Sağ üste geri al".
-- Oyun **Windowed Fullscreen** modda olmalı. Exclusive fullscreen'de görünmez.
+Sağ üstte duran küçük panel:
 
-## İstatistik
+- Aktif map, süre, ölüm, waystone ve tablet setup'ı
+- İlk 4 loot butonu
+- **+ Değerli item**: oyundan çıkmadan ekle, yazarken klavye panele geçer, bitince oyuna döner
+- Bu map'in ve bu saatin net kârı
+- Sürükle-bırak, yeri hatırlanır, opaklık ayarlanabilir
 
-- **Farm:** Expedition, Breach... (en çok kullanılan tablet türüne göre)
-- **3 vs 4 tablet:** city map'ler (4 tablet) ile diğerleri (3 tablet)
-- **Tablet setup:** birebir tablet kombinasyonu
-- **Saatlik:** her saat kaç map, kaç div
-- **Waystone:** Rarity, Pack Size, Monster Effectiveness aralıklarına göre kazanç
+<br clear="right">
 
-Her tabloda: map sayısı, ortalama loot, ortalama maliyet, net/map, net/saat.
+## 📊 İstatistik
 
-## Veri kaynakları
+Her tabloda map sayısı, ortalama loot, ortalama maliyet, **net/map** ve **net/saat** var.
+
+<details open>
+<summary><b>Farm karşılaştırması</b> (Expedition, Breach…)</summary>
+<br>
+<img src="docs/screenshots/farm.png" alt="Farm" width="100%">
+</details>
+
+<details>
+<summary><b>3 vs 4 tablet</b> (city map'ler 4 tablet alır)</summary>
+<br>
+<img src="docs/screenshots/tablet-sayisi.png" alt="3 vs 4 tablet" width="100%">
+</details>
+
+<details>
+<summary><b>Saatlik</b></summary>
+<br>
+<img src="docs/screenshots/saatlik.png" alt="Saatlik" width="100%">
+</details>
+
+<details>
+<summary><b>Waystone</b> (Rarity, Pack Size, Monster Effectiveness aralıkları)</summary>
+<br>
+<img src="docs/screenshots/waystone.png" alt="Waystone" width="100%">
+</details>
+
+<details>
+<summary><b>Geçmiş</b> (tüm map'ler)</summary>
+<br>
+<img src="docs/screenshots/gecmis.png" alt="Geçmiş" width="100%">
+</details>
+
+## 🔒 Güvenli mi?
 
 | Veri | Kaynak |
-| --- | --- |
-| Map giriş/çıkış, area level, süre, ölüm | `Client.txt` log dosyası |
-| Waystone / tablet statları | Oyunun `Ctrl+C` item metni (pano) |
-| Fiyatlar | poe.ninja PoE2 (Divine bazında, 30 dk'da bir güncellenir) |
+| :-- | :-- |
+| Map, süre, ölüm | `Client.txt` log dosyası (GGG izin veriyor) |
+| Waystone / tablet | Oyunun kendi `Ctrl+C` item metni (pano) |
+| Fiyatlar | [poe.ninja](https://poe.ninja/poe2) |
 
-Oyunun belleğini okumaz, oyuna tuş göndermez, oyun dosyalarına dokunmaz. GGG'nin üçüncü parti araç kurallarına uygundur.
+> [!IMPORTANT]
+> Oyunun belleğini okumaz, oyuna tuş göndermez, oyun dosyalarına dokunmaz. [GGG'nin üçüncü parti araç kurallarına](https://www.pathofexile.com/developer/docs) uygundur.
 
-Veriler: `%APPDATA%\poe2-map-tracker\tracker-data.json`
+Veriler bilgisayarında durur: `%APPDATA%\poe2-map-tracker\tracker-data.json`
 
-## Sorun giderme
+## 🛠️ Sorun giderme
 
-- **Üstte "Log" kırmızı:** Ayarlar → Client.txt → `...\Path of Exile 2\logs\Client.txt` dosyasını seç.
-- **Map algılanmıyor:** Debug sekmesinde log satırları görünüyor mu bak, görünmüyorsa satırları paylaş.
-- **Waystone statları boş:** Debug sekmesindeki pano metnini paylaş.
+| Sorun | Çözüm |
+| :-- | :-- |
+| Üstte **Log** kırmızı | Ayarlar → Client.txt → `...\Path of Exile 2\logs\Client.txt` seç |
+| Map algılanmıyor | Debug sekmesinde log satırları görünüyor mu bak, satırları issue olarak paylaş |
+| Waystone statları boş | Debug sekmesindeki pano metnini issue olarak paylaş |
+| SmartScreen uyarısı | Build imzasız: **More info → Run anyway** |
 
-## Geliştirme
+<details>
+<summary><b>Geliştirme</b></summary>
 
 ```bash
 npm install
-npm test
-npm start          # Mac/Windows'ta çalıştır
+npm test           # parser ve tracker testleri
+npm start          # uygulamayı çalıştır
 npm run dist:win   # Windows exe -> release/
 ```
+
+Electron + React + TypeScript, Vite ile.
+</details>
+
+<p align="center"><sub>Ekran görüntüleri demo verisiyle alınmıştır.</sub></p>

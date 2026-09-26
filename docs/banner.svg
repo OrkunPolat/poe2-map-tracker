@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c1712"/>
+      <stop offset="1" stop-color="#0d0b09"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3dca0"/>
+      <stop offset="1" stop-color="#b8904a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#c8a45c" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#c8a45c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="260" rx="16" fill="url(#bg)"/>
+  <rect x="1" y="1" width="1198" height="258" rx="15" fill="none" stroke="#c8a45c" stroke-opacity="0.55" stroke-width="2"/>
+  <circle cx="600" cy="118" r="210" fill="url(#glow)"/>
+  <!-- waystone-like rune -->
+  <g transform="translate(600 62)" fill="none" stroke="url(#gold)" stroke-width="2.5">
+    <path d="M0 -26 L22 0 L0 26 L-22 0 Z"/>
+    <path d="M0 -14 L11 0 L0 14 L-11 0 Z" fill="#c8a45c" fill-opacity="0.35"/>
+  </g>
+  <line x1="330" y1="62" x2="560" y2="62" stroke="#c8a45c" stroke-opacity="0.45"/>
+  <line x1="640" y1="62" x2="870" y2="62" stroke="#c8a45c" stroke-opacity="0.45"/>
+  <text x="600" y="150" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="58" font-weight="700" letter-spacing="3" fill="url(#gold)">PoE2 Map Tracker</text>
+  <text x="600" y="196" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="21" fill="#b9ad98">Path of Exile 2 için map takibi: waystone, tablet, loot ve net kâr</text>
+  <text x="600" y="232" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" fill="#8a7f6c" letter-spacing="1">OVERLAY · İSTATİSTİK · POE.NINJA FİYATLARI</text>
+</svg>
