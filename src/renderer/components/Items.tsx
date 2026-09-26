@@ -1,18 +1,18 @@
 import type { TabletInfo, WaystoneInfo, WaystoneStats } from "../../shared/types";
 
+/** Only the waystone's headline stats; individual monster mods are deliberately not shown. */
 const STAT_LABELS: Array<[keyof WaystoneStats, string]> = [
   ["itemRarity", "Rarity"],
-  ["itemQuantity", "Quantity"],
   ["packSize", "Pack Size"],
   ["monsterEffectiveness", "Monster Eff."],
+  ["itemQuantity", "Quantity"],
   ["magicMonsters", "Magic"],
   ["rareMonsters", "Rare"],
   ["delirious", "Delirious"],
-  ["gold", "Gold"],
   ["dropChance", "Waystone Drop"],
 ];
 
-export function WaystoneCard({ w, compact }: { w: WaystoneInfo; compact?: boolean }) {
+export function WaystoneCard({ w }: { w: WaystoneInfo }) {
   return (
     <div className={`item rarity-${w.rarity.toLowerCase()}`}>
       <div className="item-title">
@@ -27,25 +27,26 @@ export function WaystoneCard({ w, compact }: { w: WaystoneInfo; compact?: boolea
             {label} <b>{w.stats[k]}%</b>
           </span>
         ))}
+        {STAT_LABELS.every(([k]) => w.stats[k] == null) && <span className="muted">Başlık statı bulunamadı</span>}
       </div>
-      {!compact && (
-        <ul className="mods">
-          {w.mods.map((m, i) => (
-            <li key={i}>{m}</li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }
 
 export function TabletCard({ t, onRemove, compact }: { t: TabletInfo; onRemove?: () => void; compact?: boolean }) {
+  const perUse = t.costDiv != null && t.totalUses ? t.costDiv / t.totalUses : undefined;
   return (
     <div className={`item rarity-${t.rarity.toLowerCase()}`}>
       <div className="item-title">
         <span className="tag type">{t.type}</span>
         <span>{t.name || t.baseType}</span>
-        {t.usesRemaining != null && <span className="muted">{t.usesRemaining} kullanım</span>}
+        {t.usesLeft != null && (
+          <span className="uses">
+            {t.usesLeft}
+            {t.totalUses ? `/${t.totalUses}` : ""} kullanım
+          </span>
+        )}
+        {perUse != null && <span className="muted">{perUse.toFixed(2)} div/map</span>}
         {onRemove && (
           <button className="icon" title="Kaldır" onClick={onRemove}>
             ×

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { runValueDiv, unpricedLoot } from "../../shared/stats";
+import { runCostDiv, runValueDiv, unpricedLoot } from "../../shared/stats";
 import type { PriceTable, Run } from "../../shared/types";
 import { api, fmtDiv, fmtEx, fmtValue } from "../api";
 
@@ -99,7 +99,12 @@ export function LootPanel({ run, favorites, prices }: { run: Run; favorites: str
       <DropsEditor run={run} />
 
       <div className="total">
-        Toplam <b>{fmtDiv(total)} div</b> <span className="muted">{fmtEx(total, prices?.exPerDiv)}</span>
+        Loot <b>{fmtDiv(total)} div</b> <span className="muted">{fmtEx(total, prices?.exPerDiv)}</span>
+        {runCostDiv(run) > 0 && (
+          <>
+            {" "}− tablet {fmtDiv(runCostDiv(run))} = net <b>{fmtDiv(total - runCostDiv(run))} div</b>
+          </>
+        )}
         {missing.length > 0 && <span className="warn"> · fiyatsız: {missing.join(", ")}</span>}
       </div>
     </div>

@@ -35,6 +35,8 @@ export type UiEvent =
   | { type: "finishRun" }
   | { type: "deleteRun"; runId: string }
   | { type: "removePendingTablet"; index: number }
+  | { type: "updatePendingTablet"; index: number; patch: { costDiv?: number; totalUses?: number; usesLeft?: number } }
+  | { type: "setPendingTabletsCost"; totalDiv: number; usesPerTablet: number }
   | { type: "clearPending" }
   | { type: "reuseTablets"; runId: string };
 
@@ -49,4 +51,6 @@ export interface Api {
   openDataFolder(): Promise<void>;
   resizeOverlay(height: number): void;
   showMain(): void;
+  /** Lets the overlay take keyboard focus while a text field is open. */
+  setOverlayFocus(focus: boolean): void;
 }

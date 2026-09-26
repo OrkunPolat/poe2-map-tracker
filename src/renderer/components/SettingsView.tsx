@@ -90,8 +90,18 @@ export function SettingsView({ snap }: { snap: Snapshot }) {
       <section>
         <h3>Davranış</h3>
         <label className="check">
-          <input type="checkbox" checked={settings.keepTabletsAfterRun} onChange={(e) => set({ keepTabletsAfterRun: e.target.checked })} />
-          Map başladıktan sonra tabletleri sonraki map için hazırlıkta tut
+          <input type="checkbox" checked={settings.trackTabletUses} onChange={(e) => set({ trackTabletUses: e.target.checked })} />
+          Tabletler map'ten sonra hazırlıkta kalsın, kullanım hakları azalsın (bitince düşer)
+        </label>
+        <label className="check">
+          Varsayılan tablet kullanım hakkı
+          <input
+            className="qty"
+            type="number"
+            min={1}
+            value={settings.defaultTabletUses}
+            onChange={(e) => set({ defaultTabletUses: Math.max(1, Number(e.target.value) || 1) })}
+          />
         </label>
         <label className="check">
           <input type="checkbox" checked={settings.captureCurrencyFromClipboard} onChange={(e) => set({ captureCurrencyFromClipboard: e.target.checked })} />

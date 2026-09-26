@@ -55,6 +55,12 @@ export interface TabletInfo {
   usesRemaining?: number;
   mods: string[];
   raw: string;
+  /** What this tablet cost to buy, in Divine. */
+  costDiv?: number;
+  /** Uses the tablet had when bought; its cost is spread over these. */
+  totalUses?: number;
+  /** Uses left before the next map. */
+  usesLeft?: number;
 }
 
 export interface LootEntry {
@@ -83,6 +89,8 @@ export interface Run {
   waystone?: WaystoneInfo;
   tablets: TabletInfo[];
   loot: LootEntry[];
+  /** Tablet cost charged to this map (price / uses per tablet), in Divine. */
+  costDiv?: number;
   /** Optional for data saved before this field existed. */
   drops?: ValuableDrop[];
   deaths: number;
@@ -115,7 +123,9 @@ export interface Settings {
   characterName: string;
   screenshotHotkey: string;
   favoriteCurrencies: string[];
-  keepTabletsAfterRun: boolean;
+  /** Tablets stay in the setup after a map and count down their uses. */
+  trackTabletUses: boolean;
+  defaultTabletUses: number;
   captureCurrencyFromClipboard: boolean;
   alwaysOnTop: boolean;
   overlayEnabled: boolean;
@@ -149,5 +159,7 @@ export type TrackerEvent =
   | { type: "finishRun"; ts: number }
   | { type: "deleteRun"; runId: string }
   | { type: "removePendingTablet"; index: number }
+  | { type: "updatePendingTablet"; index: number; patch: Pick<TabletInfo, "costDiv" | "totalUses" | "usesLeft"> }
+  | { type: "setPendingTabletsCost"; totalDiv: number; usesPerTablet: number }
   | { type: "clearPending" }
   | { type: "reuseTablets"; runId: string };

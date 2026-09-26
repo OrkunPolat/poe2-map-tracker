@@ -1,8 +1,10 @@
 import { classifyArea, prettyAreaId } from "./logParser";
-import type { Run, TrackerEvent, TrackerState } from "./types";
+import type { Run, TabletInfo, TrackerEvent, TrackerState } from "./types";
 
 export interface TrackerOptions {
-  keepTabletsAfterRun: boolean;
+  /** Tablets stay in the setup and count down uses instead of being cleared after each map. */
+  trackTabletUses: boolean;
+  defaultTabletUses?: number;
   /** When set, only this character's deaths are counted. */
   characterName?: string;
   newId?: () => string;
@@ -14,6 +16,21 @@ export function initialState(): TrackerState {
     pending: { tablets: [], screenshots: [] },
     location: { kind: "unknown", areaId: "", areaName: "", since: 0 },
   };
+}
+
+/** Identity of a tablet across copies; the uses line changes every map so it is ignored. */
+export function tabletKey(t: TabletInfo): string {
+  return t.raw
+    .replace(/\r/g, "")
+    .split("\n")
+    .filter((l) => !/uses?/i.test(l))
+    .join("\n")
+    .trim();
+}
+
+/** Divine charged per map for one tablet, when its price and use count are known. */
+export function tabletCostPerUse(t: TabletInfo): number {
+  return t.costDiv != null && t.totalUses ? t.costDiv / t.totalUses : 0;
 }
 
 const defaultId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -59,6 +76,7 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
         seed: ev.seed,
         waystone: s.pending.waystone,
         tablets: s.pending.tablets,
+        costDiv: s.pending.tablets.reduce((sum, t) => sum + tabletCostPerUse(t), 0),
         loot: [],
         deaths: 0,
         mapTimeMs: 0,
@@ -72,7 +90,7 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
         segmentStart: ev.ts,
         pending: {
           waystone: undefined,
-          tablets: opts.keepTabletsAfterRun ? s.pending.tablets : [],
+          tablets: opts.trackTabletUses ? consumeUse(s.pending.tablets, opts.defaultTabletUses ?? 10) : [],
           screenshots: [],
         },
       };
@@ -94,9 +112,35 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
       return { ...state, pending: { ...state.pending, waystone: ev.waystone } };
 
     case "tabletCopied": {
-      // Copying the same tablet twice (e.g. re-checking it) must not add it twice.
-      if (state.pending.tablets.some((t) => t.raw === ev.tablet.raw)) return state;
-      return { ...state, pending: { ...state.pending, tablets: [...state.pending.tablets, ev.tablet] } };
+      // Copying a tablet already in the setup (e.g. re-checking it) refreshes its uses instead of adding it twice.
+      const key = tabletKey(ev.tablet);
+      const idx = state.pending.tablets.findIndex((t) => tabletKey(t) === key);
+      if (idx >= 0) {
+        const uses = ev.tablet.usesRemaining;
+        if (uses == null) return state;
+        const tablets = state.pending.tablets.map((t, i) => (i === idx ? { ...t, usesRemaining: uses, usesLeft: uses } : t));
+        return { ...state, pending: { ...state.pending, tablets } };
+      }
+      const tablet = { ...ev.tablet, usesLeft: ev.tablet.usesRemaining };
+      return { ...state, pending: { ...state.pending, tablets: [...state.pending.tablets, tablet] } };
+    }
+
+    case "updatePendingTablet": {
+      const tablets = state.pending.tablets.map((t, i) => (i === ev.index ? { ...t, ...ev.patch } : t));
+      return { ...state, pending: { ...state.pending, tablets } };
+    }
+
+    case "setPendingTabletsCost": {
+      const n = state.pending.tablets.length;
+      if (n === 0) return state;
+      // "3 tablets for 20 div" -> each tablet carries a third of the price over its uses.
+      const tablets = state.pending.tablets.map((t) => ({
+        ...t,
+        costDiv: ev.totalDiv / n,
+        totalUses: ev.usesPerTablet,
+        usesLeft: t.usesLeft ?? ev.usesPerTablet,
+      }));
+      return { ...state, pending: { ...state.pending, tablets } };
     }
 
     case "screenshot": {
@@ -152,6 +196,13 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
       return run ? { ...state, pending: { ...state.pending, tablets: run.tablets } } : state;
     }
   }
+}
+
+/** One map used every tablet once; spent tablets leave the setup. */
+function consumeUse(tablets: TabletInfo[], defaultUses: number): TabletInfo[] {
+  return tablets
+    .map((t) => ({ ...t, usesLeft: (t.usesLeft ?? t.totalUses ?? defaultUses) - 1 }))
+    .filter((t) => t.usesLeft > 0);
 }
 
 /** Live map time for the active run, including the still-open segment. */

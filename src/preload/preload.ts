@@ -16,6 +16,7 @@ const api: Api = {
   openDataFolder: () => ipcRenderer.invoke("folder:data"),
   resizeOverlay: (height) => ipcRenderer.send("overlay:resize", height),
   showMain: () => ipcRenderer.send("main:show"),
+  setOverlayFocus: (focus) => ipcRenderer.send("overlay:focus", focus),
 };
 
 contextBridge.exposeInMainWorld("api", api);

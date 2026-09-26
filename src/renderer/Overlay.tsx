@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
-import { formatDuration, runValueDiv, tabletSetupKey } from "../shared/stats";
+import { useEffect, useRef, useState } from "react";
+import { formatDuration, hourKeyAt, runCostDiv, runNetDiv, tabletSetupKey } from "../shared/stats";
 import { liveMapTime } from "../shared/tracker";
+import type { Run } from "../shared/types";
 import { api, fmtDiv, useNow, useSnapshot } from "./api";
 
 /** Compact always-on-top panel shown over the game (top-right by default). */
@@ -8,6 +9,7 @@ export function Overlay() {
   const snap = useSnapshot();
   const now = useNow();
   const ref = useRef<HTMLDivElement>(null);
+  const [dropOpen, setDropOpen] = useState(false);
 
   // Size the frameless window to whatever the panel currently needs.
   useEffect(() => {
@@ -25,7 +27,8 @@ export function Overlay() {
   const inMap = state.location.kind === "map" && !!active;
   const { pending } = state;
   const quick = settings.favoriteCurrencies.slice(0, 4);
-  const total = last ? runValueDiv(last, prices) : 0;
+  const hourRuns = state.runs.filter((r) => hourKeyAt(r.startedAt) === hourKeyAt(now));
+  const hourNet = hourRuns.reduce((s, r) => s + runNetDiv(r, prices), 0);
 
   return (
     <div className="ov" ref={ref}>
@@ -34,7 +37,7 @@ export function Overlay() {
         <span className="ov-title">{inMap ? active!.areaName : state.location.kind === "hideout" ? "Hideout" : "PoE2 Tracker"}</span>
         {inMap && (
           <span className="ov-meta">
-            lvl {active!.areaLevel} · {formatDuration(liveMapTime(state, active!, now))}
+            {formatDuration(liveMapTime(state, active!, now))}
             {active!.deaths > 0 && <span className="ov-death"> · {active!.deaths} ölüm</span>}
           </span>
         )}
@@ -53,8 +56,8 @@ export function Overlay() {
         </div>
       ) : (
         <div className="ov-line">
-          Hazır: {pending.waystone ? `T${pending.waystone.stats.tier ?? "?"} waystone` : "waystone yok"} · {pending.tablets.length} tablet
-          {pending.tablets.length > 0 && ` (${pending.tablets.map((t) => t.type).join(", ")})`}
+          Hazır: {pending.waystone ? `T${pending.waystone.stats.tier ?? "?"}` : "waystone yok"} · {pending.tablets.length} tablet
+          {pending.tablets.length > 0 && ` (${pending.tablets.map((t) => t.usesLeft ?? "?").join("/")} hak)`}
         </div>
       )}
 
@@ -80,11 +83,75 @@ export function Overlay() {
               );
             })}
           </div>
+
+          {dropOpen ? (
+            <DropForm run={last} onDone={() => setDropOpen(false)} />
+          ) : (
+            <button className="ov-add" onClick={() => setDropOpen(true)}>
+              + Değerli item
+            </button>
+          )}
+          {(last.drops ?? []).length > 0 && (
+            <div className="ov-drops">{last.drops!.map((d) => `${d.name} ${fmtDiv(d.valueDiv)}`).join(" · ")}</div>
+          )}
+
           <div className="ov-total">
-            {inMap ? "Bu map" : `Son map (${last.areaName})`}: <b>{fmtDiv(total)} div</b>
+            {inMap ? "Bu map" : "Son map"}: net <b>{fmtDiv(runNetDiv(last, prices))} div</b>
+            {runCostDiv(last) > 0 && <span> (tablet −{fmtDiv(runCostDiv(last))})</span>}
           </div>
         </>
       )}
+      <div className="ov-total">
+        Bu saat: {hourRuns.length} map · net <b>{fmtDiv(hourNet)} div</b>
+      </div>
+    </div>
+  );
+}
+
+/** Typing needs keyboard focus, so the overlay takes it only while this form is open. */
+function DropForm({ run, onDone }: { run: Run; onDone: () => void }) {
+  const [value, setValue] = useState("");
+  const [name, setName] = useState("");
+  const valueRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    api().setOverlayFocus(true);
+    const t = setTimeout(() => valueRef.current?.focus(), 50);
+    return () => {
+      clearTimeout(t);
+      api().setOverlayFocus(false);
+    };
+  }, []);
+
+  const div = Number(value.replace(",", "."));
+  const valid = name.trim() !== "" && value.trim() !== "" && Number.isFinite(div) && div >= 0;
+  const submit = () => {
+    if (!valid) return;
+    void api().dispatch({ type: "addDrop", runId: run.id, name: name.trim(), valueDiv: div });
+    onDone();
+  };
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") submit();
+    if (e.key === "Escape") onDone();
+  };
+
+  return (
+    <div className="ov-form">
+      <div className="ov-presets">
+        <input ref={valueRef} className="ov-val" inputMode="decimal" placeholder="div" value={value} onChange={(e) => setValue(e.target.value)} onKeyDown={onKey} />
+        {[0.5, 1, 5, 10, 20].map((p) => (
+          <button key={p} className={div === p ? "has" : ""} onClick={() => setValue(String(p))}>
+            {p}
+          </button>
+        ))}
+      </div>
+      <input className="ov-name" placeholder="Mageblood, Headhunter…" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={onKey} />
+      <div className="ov-presets">
+        <button className="has" disabled={!valid} onClick={submit}>
+          Ekle
+        </button>
+        <button onClick={onDone}>Vazgeç</button>
+      </div>
     </div>
   );
 }

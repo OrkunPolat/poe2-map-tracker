@@ -19,7 +19,8 @@ export const DEFAULT_SETTINGS: Settings = {
     "Divine Orb", "Exalted Orb", "Chaos Orb", "Orb of Annulment",
     "Greater Chaos Orb", "Perfect Chaos Orb", "Perfect Exalted Orb", "Greater Exalted Orb",
   ],
-  keepTabletsAfterRun: false,
+  trackTabletUses: true,
+  defaultTabletUses: 10,
   captureCurrencyFromClipboard: false,
   alwaysOnTop: false,
   overlayEnabled: true,
@@ -41,7 +42,9 @@ export class Store {
     if (existsSync(this.file)) {
       try {
         const d = JSON.parse(readFileSync(this.file, "utf8")) as Persisted;
-        return { ...d, settings: { ...DEFAULT_SETTINGS, ...d.settings }, state: { ...initialState(), ...d.state } };
+        // Drop settings keys from older versions so they don't linger in the file.
+        const { keepTabletsAfterRun: _old, ...settings } = (d.settings ?? {}) as Settings & { keepTabletsAfterRun?: boolean };
+        return { ...d, settings: { ...DEFAULT_SETTINGS, ...settings }, state: { ...initialState(), ...d.state } };
       } catch (e) {
         // Never overwrite a file we failed to read; keep it next to the fresh one.
         renameSync(this.file, `${this.file}.corrupt-${Date.now()}`);

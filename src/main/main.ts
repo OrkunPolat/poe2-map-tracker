@@ -50,7 +50,8 @@ function push() {
 function apply(ev: TrackerEvent) {
   const { settings } = store.data;
   store.data.state = reduce(store.data.state, ev, {
-    keepTabletsAfterRun: settings.keepTabletsAfterRun,
+    trackTabletUses: settings.trackTabletUses,
+    defaultTabletUses: settings.defaultTabletUses,
     characterName: settings.characterName.trim() || undefined,
   });
   store.save();
@@ -318,6 +319,13 @@ function setupIpc() {
   ipcMain.on("overlay:resize", (_, height: number) => {
     if (!overlay || !Number.isFinite(height)) return;
     overlay.setContentSize(OVERLAY_WIDTH, Math.min(600, Math.max(60, Math.ceil(height))));
+  });
+  ipcMain.on("overlay:focus", (_, focus: boolean) => {
+    if (!overlay) return;
+    overlay.setFocusable(focus);
+    if (focus) overlay.focus();
+    // Blurring hands focus back to the window underneath, normally the game.
+    else overlay.blur();
   });
   ipcMain.on("main:show", () => {
     if (!win) return;

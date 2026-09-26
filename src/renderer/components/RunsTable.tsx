@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { formatDuration, runValueDiv, tabletSetupKey } from "../../shared/stats";
+import { formatDuration, runNetDiv, runValueDiv, tabletSetupKey } from "../../shared/stats";
 import { liveMapTime } from "../../shared/tracker";
 import type { PriceTable, Run, TrackerState } from "../../shared/types";
 import { api, fmtDiv } from "../api";
@@ -36,7 +36,8 @@ export function RunsTable({
             <th>Süre</th>
             <th>Ölüm</th>
             <th>Loot</th>
-            <th className="num">Div</th>
+            <th className="num">Loot</th>
+            <th className="num">Net</th>
           </tr>
         </thead>
         <tbody>
@@ -66,13 +67,14 @@ export function RunsTable({
                     ))}
                     {r.loot.map((l) => `${l.qty} ${l.name.replace(/ Orb$/, "")}`).join(", ")}
                   </td>
+                  <td className="num">{fmtDiv(runValueDiv(r, prices))}</td>
                   <td className="num">
-                    <b>{fmtDiv(runValueDiv(r, prices))}</b>
+                    <b className={runNetDiv(r, prices) < 0 ? "warn" : ""}>{fmtDiv(runNetDiv(r, prices))}</b>
                   </td>
                 </tr>
                 {isOpen && (
                   <tr className="detail">
-                    <td colSpan={14}>
+                    <td colSpan={15}>
                       <RunDetail run={r} prices={prices} favorites={favorites} />
                     </td>
                   </tr>

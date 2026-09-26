@@ -3,13 +3,13 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseItem, toTablet, toWaystone } from "../src/shared/itemParser";
 import { parseLogLine } from "../src/shared/logParser";
-import { runValueDiv, runsToCsv, summarizeBySetup, tabletSetupKey } from "../src/shared/stats";
+import { farmKey, runValueDiv, runsToCsv, statBucket, summarize, tabletSetupKey } from "../src/shared/stats";
 import { initialState, reduce, type TrackerOptions } from "../src/shared/tracker";
 import type { TrackerEvent, TrackerState } from "../src/shared/types";
 
 const fx = (name: string) => readFileSync(join(__dirname, "fixtures", name), "utf8");
 let n = 0;
-const opts: TrackerOptions = { keepTabletsAfterRun: false, characterName: "Orkun", newId: () => `run${++n}` };
+const opts: TrackerOptions = { trackTabletUses: false, characterName: "Orkun", newId: () => `run${++n}` };
 
 function play(state: TrackerState, events: TrackerEvent[], o = opts) {
   return events.reduce((s, e) => reduce(s, e, o), state);
@@ -54,7 +54,7 @@ describe("tracker", () => {
         { type: "tabletCopied", ts: 0, tablet },
         { type: "areaGenerated", ts: 1000, level: 80, areaId: "MapA", seed: "1" },
       ],
-      { ...opts, keepTabletsAfterRun: true },
+      { ...opts, trackTabletUses: true },
     );
     expect(s.pending.tablets).toHaveLength(1);
   });
@@ -75,9 +75,9 @@ describe("tracker", () => {
     expect(runValueDiv(run, prices)).toBeCloseTo(2.2);
     expect(run.mapTimeMs).toBe(600_000);
     expect(s.activeRunId).toBeUndefined();
-    const [sum] = summarizeBySetup(s.runs, prices);
-    expect(sum).toMatchObject({ setup: "Tabletsiz", runs: 1 });
-    expect(sum!.divPerHour).toBeCloseTo(13.2);
+    const [sum] = summarize(s.runs, tabletSetupKey, prices);
+    expect(sum).toMatchObject({ key: "Tabletsiz", runs: 1 });
+    expect(sum!.netPerHour).toBeCloseTo(13.2);
     expect(runsToCsv(s.runs, prices).startsWith("﻿Tarih;Map")).toBe(true);
   });
 
@@ -118,5 +118,52 @@ describe("valuable drops", () => {
   it("values runs saved before drops existed", () => {
     const old = { id: "o", startedAt: 0, areaId: "", areaName: "", tablets: [], loot: [], deaths: 0, mapTimeMs: 0, screenshots: [], note: "" };
     expect(runValueDiv(old)).toBe(0);
+  });
+});
+
+describe("tablet costs", () => {
+  const tabletText = (mod: string, uses?: number) =>
+    `Item Class: Tablet\nRarity: Magic\nExpedition Precursor Tablet\n--------\nItem Level: 80\n${uses != null ? `Uses Remaining: ${uses}\n` : ""}--------\n${mod}\n`;
+  const copy = (mod: string, uses?: number): TrackerEvent => ({ type: "tabletCopied", ts: 0, tablet: toTablet(parseItem(tabletText(mod, uses))!) });
+  const enter = (seed: string): TrackerEvent => ({ type: "areaGenerated", ts: Number(seed) * 1000, level: 80, areaId: "MapA", seed });
+  const o = { ...opts, trackTabletUses: true, defaultTabletUses: 10 };
+
+  it("spreads '3 tablets for 20 div' over 10 uses each and drops spent tablets", () => {
+    let s = play(initialState(), [copy("a"), copy("b"), copy("c"), { type: "setPendingTabletsCost", totalDiv: 20, usesPerTablet: 10 }], o);
+    s = play(s, [enter("1")], o);
+    expect(s.runs[0]!.costDiv).toBeCloseTo(2); // 3 x (6.67 / 10)
+    expect(s.pending.tablets.map((t) => t.usesLeft)).toEqual([9, 9, 9]);
+    for (let i = 2; i <= 10; i++) s = play(s, [enter(String(i))], o);
+    expect(s.runs).toHaveLength(10);
+    expect(s.pending.tablets).toHaveLength(0);
+    const total = s.runs.reduce((sum, r) => sum + (r.costDiv ?? 0), 0);
+    expect(total).toBeCloseTo(20);
+  });
+
+  it("re-copying a tablet refreshes uses instead of duplicating it", () => {
+    let s = play(initialState(), [copy("a", 10)], o);
+    s = play(s, [enter("1"), copy("a", 9)], o);
+    expect(s.pending.tablets).toHaveLength(1);
+    expect(s.pending.tablets[0]!.usesLeft).toBe(9);
+  });
+});
+
+describe("farm grouping", () => {
+  const t = (type: string) => ({ type, rarity: "Magic", name: "", baseType: "", mods: [], raw: type });
+  const base = { id: "", startedAt: 0, areaId: "", areaName: "", loot: [], deaths: 0, mapTimeMs: 0, screenshots: [], note: "" };
+  it("names the farm after the dominant tablet type", () => {
+    expect(farmKey({ ...base, tablets: [t("Expedition"), t("Expedition"), t("Delirium")] })).toBe("Expedition");
+    expect(farmKey({ ...base, tablets: [t("Breach"), t("Delirium"), t("Delirium"), t("Breach")] })).toBe("Breach + Delirium");
+    expect(farmKey({ ...base, tablets: [] })).toBe("Tabletsiz");
+  });
+  it("buckets waystone stats", () => {
+    expect(statBucket(72, 50)).toEqual({ key: "50-99%", order: 50 });
+    expect(statBucket(undefined, 50).key).toBe("yok");
+  });
+  it("computes net after tablet cost", () => {
+    const run = { ...base, tablets: [], costDiv: 2, loot: [{ name: "Divine Orb", qty: 5, unitDiv: 1 }], mapTimeMs: 600_000 };
+    const [g] = summarize([run], () => "x");
+    expect(g).toMatchObject({ avgDiv: 5, avgCost: 2, avgNet: 3 });
+    expect(g!.netPerHour).toBeCloseTo(18);
   });
 });

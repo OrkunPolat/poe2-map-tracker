@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Snapshot } from "../shared/ipc";
-import { formatDuration, runValueDiv, tabletSetupKey } from "../shared/stats";
+import { formatDuration, hourKeyAt, runCostDiv, runNetDiv, runValueDiv, tabletSetupKey } from "../shared/stats";
 import { liveMapTime } from "../shared/tracker";
 import { api, fmtDiv, useNow, useSnapshot } from "./api";
 import { LootPanel } from "./components/LootPanel";
@@ -24,7 +24,7 @@ export function App() {
   const snap = useSnapshot();
   const now = useNow();
   // "#tab=runs" opens a specific tab (used by preview screenshots).
-  const [tab, setTab] = useState<Tab>(() => (TABS.find(([id]) => location.hash === `#tab=${id}`)?.[0] ?? "track"));
+  const [tab, setTab] = useState<Tab>(() => (TABS.find(([id]) => location.hash.split(":")[0] === `#tab=${id}`)?.[0] ?? "track"));
   if (!snap) return <div className="loading">Yükleniyor…</div>;
   const { state, prices, status, settings } = snap;
 
@@ -77,6 +77,9 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
   const todayStart = new Date(new Date(now).toDateString()).getTime();
   const today = state.runs.filter((r) => r.startedAt >= todayStart);
   const todayDiv = today.reduce((s, r) => s + runValueDiv(r, prices), 0);
+  const todayNet = today.reduce((s, r) => s + runNetDiv(r, prices), 0);
+  const thisHour = state.runs.filter((r) => hourKeyAt(r.startedAt) === hourKeyAt(now));
+  const hourNet = thisHour.reduce((s, r) => s + runNetDiv(r, prices), 0);
 
   return (
     <div className="track">
@@ -102,6 +105,7 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
         {pending.tablets.map((t, i) => (
           <TabletCard key={i} t={t} onRemove={() => void api().dispatch({ type: "removePendingTablet", index: i })} />
         ))}
+        {pending.tablets.length > 0 && <TabletCostForm count={pending.tablets.length} defaultUses={settings.defaultTabletUses} />}
         <Screenshots files={pending.screenshots} />
       </section>
 
@@ -129,24 +133,66 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
                 <b>{current.deaths}</b>
               </div>
               <div>
-                <span>Waystone</span>
-                <b>{current.waystone ? `T${current.waystone.stats.tier ?? "?"}` : "–"}</b>
+                <span>Tablet maliyeti</span>
+                <b>{runCostDiv(current) ? fmtDiv(runCostDiv(current)) : "–"}</b>
               </div>
               <div>
-                <span>Tablet</span>
-                <b className="kpi-small">{current.tablets.length ? tabletSetupKey(current) : "–"}</b>
+                <span>Net</span>
+                <b className={runNetDiv(current, prices) < 0 ? "warn" : "gold"}>{fmtDiv(runNetDiv(current, prices))}</b>
               </div>
             </div>
+            <p className="muted setup-line">
+              {current.waystone ? `T${current.waystone.stats.tier ?? "?"} waystone` : "Waystone kaydı yok"} ·{" "}
+              {current.tablets.length ? tabletSetupKey(current) : "tabletsiz"}
+            </p>
             <LootPanel run={current} favorites={settings.favoriteCurrencies} prices={prices} />
           </>
         ) : (
           <p className="empty">Map'e girdiğinde burada süre, ölüm ve loot girişi görünür.</p>
         )}
         <div className="today">
-          Bugün: <b>{today.length}</b> map · <b>{fmtDiv(todayDiv)} div</b>
-          {today.length > 0 && <span className="muted"> · ortalama {fmtDiv(todayDiv / today.length)} div/map</span>}
+          <div>
+            Bu saat ({new Date(now).getHours()}:00): <b>{thisHour.length}</b> map · net <b>{fmtDiv(hourNet)} div</b>
+            {thisHour.length > 0 && <span className="muted"> · ort. {fmtDiv(hourNet / thisHour.length)}/map</span>}
+          </div>
+          <div>
+            Bugün: <b>{today.length}</b> map · loot <b>{fmtDiv(todayDiv)}</b> · net <b>{fmtDiv(todayNet)} div</b>
+            {today.length > 0 && <span className="muted"> · ort. {fmtDiv(todayNet / today.length)}/map</span>}
+          </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+/** "I bought these 3 tablets for 20 div, 10 uses each" -> cost per map is spread automatically. */
+function TabletCostForm({ count, defaultUses }: { count: number; defaultUses: number }) {
+  const [total, setTotal] = useState("");
+  const [uses, setUses] = useState(String(defaultUses));
+  const div = Number(total.replace(",", "."));
+  const n = Math.max(1, Math.round(Number(uses) || 0));
+  const valid = total.trim() !== "" && Number.isFinite(div) && div >= 0;
+  return (
+    <div className="cost-form">
+      <h4>Tablet maliyeti</h4>
+      <div className="row">
+        <span>{count} tablet toplam</span>
+        <input className="div-input" inputMode="decimal" placeholder="20" value={total} onChange={(e) => setTotal(e.target.value)} />
+        <span>div, her biri</span>
+        <input className="qty" type="number" min={1} value={uses} onChange={(e) => setUses(e.target.value)} />
+        <span>kullanım</span>
+        <button
+          className="primary"
+          disabled={!valid}
+          onClick={() => {
+            void api().dispatch({ type: "setPendingTabletsCost", totalDiv: div, usesPerTablet: n });
+            setTotal("");
+          }}
+        >
+          Uygula
+        </button>
+      </div>
+      {valid && <p className="hint">Map başına {(div / n).toFixed(2)} div maliyet yazılır.</p>}
     </div>
   );
 }
