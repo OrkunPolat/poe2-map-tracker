@@ -158,8 +158,9 @@ function TradeSetup({ account }: { account: string }) {
           Oyunda okumak istediğin sekmeye sağ tık → <b>Public</b> yap. <span className="warn">Merchant's Tab kullanma</span> (orada item'lar anında satılabilir).
         </li>
         <li>
-          Sekmenin adını <code>~price 991 divine</code> yap. Her sekmeye farklı sayı ver: <code>992</code>, <code>993</code>… (990-999 arası).
-          Bu fahiş fiyat item'ların sadece trade sitesinde görünmesini sağlar, kimse almaz.
+          Sekmenin adını fiyat + istediğin isim yap: <code>~price 991 divine Expedition</code>, <code>~price 992 divine Ritual</code>,{" "}
+          <code>~price 993 divine Abyss</code>… Her sekmeye farklı sayı ver (990-999 arası). Fahiş fiyat item'ların sadece trade sitesinde görünmesini
+          sağlar, kimse almaz; sondaki isim uygulamada sekme adı olarak görünür.
         </li>
         <li>Hesap adını <b>İsim#1234</b> şeklinde gir (pathofexile.com profilindeki tam ad) ve <b>⟳ Yenile</b>'ye bas.</li>
       </ol>

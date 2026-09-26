@@ -127,3 +127,14 @@ describe("trade stash", () => {
     expect(rl.waitMs()).toBe(0);
   });
 });
+
+describe("trade tab names", () => {
+  it("keeps the user's name around the price note", async () => {
+    const { tabDisplayName } = await import("../src/shared/tradeStash");
+    // Real tab names seen on the PoE2 trade site.
+    expect(tabDisplayName("~price 991 divine Expedition")).toBe("Expedition");
+    expect(tabDisplayName("~price 99 waystone-8      ritul")).toBe("ritul");
+    expect(tabDisplayName("Breach~b/o 2 chaos")).toBe("Breach");
+    expect(tabDisplayName("~price 1 divine")).toBeUndefined();
+  });
+});

@@ -1,6 +1,6 @@
 import { net } from "electron";
 import {
-  RateLimiter, TRADE_PRICE_MAX, TRADE_PRICE_MIN, aggregateListings, searchBody, type TradeListing,
+  RateLimiter, TRADE_PRICE_MAX, TRADE_PRICE_MIN, aggregateListings, searchBody, tabDisplayName, type TradeListing,
 } from "../shared/tradeStash";
 import { STASH_CATEGORIES } from "../shared/prices";
 import type { PriceTable, StashTab } from "../shared/types";
@@ -94,7 +94,8 @@ export async function syncTradeTabs(
     const category = [...votes.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
     tabs.push({
       id: `trade:${tabName}`,
-      label: `${category ?? "Sekme"} (${tabName})`,
+      // The user's own name wins ("~price 991 divine Expedition" -> "Expedition"); else the item category.
+      label: tabDisplayName(tabName) ?? category ?? tabName,
       category,
       capturedAt: now,
       screenshot: "",

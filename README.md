@@ -116,7 +116,7 @@ Her tabloda map sayısı, ortalama loot, ortalama maliyet, **net/map**, ortalama
 
 ## 🏦 Stash
 
-**Otomatik (önerilen, PoE Overlay yöntemi):** Okumak istediğin sekmeyi **Public** yap ve adını `~price 991 divine` koy (her sekmeye farklı sayı: 992, 993… 990-999 arası). Stash ekranına hesap adını (`İsim#1234`) gir ve **⟳ Yenile**'ye bas. Uygulama trade sitesinden o sekmelerdeki bütün item'ları ve stack sayılarını okur; gem ve unique'ler dahil. Merchant's Tab kullanma, orada item'lar anında satılabilir.
+**Otomatik (önerilen, PoE Overlay yöntemi):** Okumak istediğin sekmeyi **Public** yap ve adını fiyat + isim koy: `~price 991 divine Expedition`, `~price 992 divine Ritual`, `~price 993 divine Abyss`… (her sekmeye farklı sayı, 990-999 arası; sondaki isim uygulamada sekme adı olur). Stash ekranına hesap adını (`İsim#1234`) gir ve **⟳ Yenile**'ye bas. Uygulama trade sitesinden o sekmelerdeki bütün item'ları ve stack sayılarını okur; gem ve unique'ler dahil. Merchant's Tab kullanma, orada item'lar anında satılabilir.
 
 **Ekrandan:** Oyunda özel bir stash sekmesini aç, <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd> bas. Uygulama ekranın sol yarısının görüntüsünü alır:
 

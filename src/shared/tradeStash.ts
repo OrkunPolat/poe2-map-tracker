@@ -43,6 +43,17 @@ export function searchBody(account: string, price?: number) {
   };
 }
 
+const PRICE_NOTE = /~(?:price|b\/o)\s+[\d.,\/]+\s+[\w-]+/i;
+
+/**
+ * Readable tab name: the text around the price note. "~price 991 divine Expedition" -> "Expedition".
+ * The game accepts extra text before or after the note (checked on live trade listings).
+ */
+export function tabDisplayName(stashName: string): string | undefined {
+  const rest = stashName.replace(PRICE_NOTE, " ").replace(/\s+/g, " ").trim();
+  return rest || undefined;
+}
+
 /** Display name: uniques are "Name BaseType" on trade; stackables are just the type line. */
 export function listingItemName(l: TradeListing): string {
   const { name, typeLine, baseType } = l.item;
