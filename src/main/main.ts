@@ -13,6 +13,7 @@ import { reduce } from "../shared/tracker";
 import type { Settings, TrackerEvent } from "../shared/types";
 import { LogTail, detectLogPath, readTailLines } from "./logTail";
 import { Store } from "./store";
+import { checkForUpdate, installUpdate } from "./updater";
 
 // Test hooks: POE2T_DATA isolates the data dir, POE2T_LOG forces a log file, POE2T_SMOKE writes a screenshot and quits.
 if (process.env.POE2T_DATA) app.setPath("userData", resolve(process.env.POE2T_DATA));
@@ -27,7 +28,7 @@ let overlay: BrowserWindow | null = null;
 const OVERLAY_WIDTH = 300;
 let store: Store;
 let tail: LogTail | undefined;
-const status: Snapshot["status"] = { logFound: false, hotkeyRegistered: false, overlayHotkeyRegistered: false, leagues: [] };
+const status: Snapshot["status"] = { version: app.getVersion(), logFound: false, hotkeyRegistered: false, overlayHotkeyRegistered: false, leagues: [] };
 const debug: Snapshot["debug"] = { recentLog: [] };
 const shotsDir = () => join(app.getPath("userData"), "screenshots");
 
@@ -51,6 +52,7 @@ function apply(ev: TrackerEvent) {
   const { settings } = store.data;
   store.data.state = reduce(store.data.state, ev, {
     trackTabletUses: settings.trackTabletUses,
+    repeatCosts: settings.repeatCosts,
     defaultTabletUses: settings.defaultTabletUses,
     characterName: settings.characterName.trim() || undefined,
   });
@@ -161,6 +163,36 @@ async function refreshPrices() {
   push();
 }
 
+// ---------- Updates ----------
+async function checkUpdate() {
+  try {
+    status.update = await checkForUpdate(USER_AGENT);
+    status.updateError = undefined;
+  } catch (e) {
+    status.updateError = (e as Error).message;
+  }
+  status.updateCheckedAt = Date.now();
+  push();
+}
+
+async function runUpdate() {
+  if (!status.update || status.updateProgress != null) return;
+  status.updateProgress = 0;
+  status.updateError = undefined;
+  push();
+  try {
+    store.flush(); // data must be on disk before the app is replaced
+    await installUpdate(status.update, USER_AGENT, (p) => {
+      status.updateProgress = p;
+      push();
+    });
+  } catch (e) {
+    status.updateError = (e as Error).message;
+  }
+  status.updateProgress = undefined;
+  push();
+}
+
 // ---------- Screenshot hotkey ----------
 async function takeScreenshot() {
   const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
@@ -267,6 +299,11 @@ function handleUi(ev: UiEvent) {
       return apply({ ...ev, unitDiv: priceOf(ev.name) });
     case "finishRun":
       return apply({ type: "finishRun", ts: Date.now() });
+    case "addPendingCost": {
+      const unitDiv = ev.unitDiv ?? priceOf(ev.name);
+      if (unitDiv == null || !Number.isFinite(unitDiv)) return;
+      return apply({ type: "addPendingCost", name: ev.name, qty: ev.qty, unitDiv });
+    }
     case "addDrop": {
       const name = ev.name.trim();
       if (!name || !Number.isFinite(ev.valueDiv) || ev.valueDiv < 0) return;
@@ -315,6 +352,8 @@ function setupIpc() {
     return res.filePath;
   });
   ipcMain.handle("prices:refresh", () => refreshPrices());
+  ipcMain.handle("update:check", () => checkUpdate());
+  ipcMain.handle("update:install", () => runUpdate());
   ipcMain.handle("folder:data", () => shell.openPath(app.getPath("userData")));
   ipcMain.on("overlay:resize", (_, height: number) => {
     if (!overlay || !Number.isFinite(height)) return;
@@ -338,7 +377,7 @@ function setupIpc() {
 function createWindow() {
   win = new BrowserWindow({
     width: 1280,
-    height: 860,
+    height: Number(process.env.POE2T_SMOKE_HEIGHT ?? 860),
     minWidth: 900,
     minHeight: 600,
     backgroundColor: "#12100e",
@@ -396,6 +435,8 @@ app.whenReady().then(() => {
     });
   void refreshPrices();
   setInterval(() => void refreshPrices(), PRICE_REFRESH_MS);
+  void checkUpdate();
+  setInterval(() => void checkUpdate(), 6 * 60 * 60 * 1000);
 });
 
 app.on("will-quit", () => {

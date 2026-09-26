@@ -167,3 +167,35 @@ describe("farm grouping", () => {
     expect(g!.netPerHour).toBeCloseTo(18);
   });
 });
+
+describe("consumable costs and sessions", () => {
+  it("charges juice to each map and repeats it when configured", async () => {
+    const { consumablesDiv, runCostDiv } = await import("../src/shared/stats");
+    const o = { ...opts, repeatCosts: true };
+    let s = play(initialState(), [
+      { type: "addPendingCost", name: "Omen of Light", qty: 1, unitDiv: 7.5 },
+      { type: "addPendingCost", name: "Breachstone", qty: 2, unitDiv: 2.5 },
+      { type: "areaGenerated", ts: 0, level: 80, areaId: "MapA", seed: "1" },
+      { type: "areaGenerated", ts: 1000, level: 80, areaId: "MapB", seed: "2" },
+    ], o);
+    expect(consumablesDiv(s.runs[0]!)).toBe(12.5);
+    expect(runCostDiv(s.runs[1]!)).toBe(12.5);
+    s = play(s, [{ type: "clearPendingCosts" }, { type: "areaGenerated", ts: 2000, level: 80, areaId: "MapC", seed: "3" }], o);
+    expect(runCostDiv(s.runs[2]!)).toBe(0);
+  });
+
+  it("splits sessions on long pauses and measures wall-clock rate", async () => {
+    const { groupSessions, sessionNetPerHour } = await import("../src/shared/sessions");
+    const min = 60_000;
+    const mk = (id: string, start: number, mapMin: number, div: number) => ({
+      id, startedAt: start * min, endedAt: (start + mapMin) * min, areaId: "", areaName: id, tablets: [],
+      loot: [{ name: "Divine Orb", qty: div, unitDiv: 1 }], deaths: 0, mapTimeMs: mapMin * min, screenshots: [], note: "",
+    });
+    // two maps 10 min apart, then a 2h break
+    const runs = [mk("a", 0, 5, 3), mk("b", 15, 5, 3), mk("c", 200, 5, 4)];
+    const sessions = groupSessions(runs, 30 * min);
+    expect(sessions.map((x) => x.runs.length)).toEqual([2, 1]);
+    // 6 div over 20 wall minutes = 18/h, although map time alone would say 36/h
+    expect(sessionNetPerHour(sessions[0]!)).toBeCloseTo(18);
+  });
+});

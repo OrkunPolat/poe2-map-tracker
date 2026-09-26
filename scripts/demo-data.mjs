@@ -49,7 +49,7 @@ active.drops = [{ id: "dd3", name: "Mageblood", valueDiv: 20 }];
 
 const state = {
   runs,
-  pending: { waystone: waystone(16, 88, 35, 40), tablets: priced([exp(), exp(), exp()], 20).map((t) => ({ ...t, usesLeft: 7 })), screenshots: [] },
+  pending: { costs: [{ name: "Omen of Light", qty: 1, unitDiv: 7.5 }, { name: "Breachstone", qty: 1, unitDiv: 2.86 }], waystone: waystone(16, 88, 35, 40), tablets: priced([exp(), exp(), exp()], 20).map((t) => ({ ...t, usesLeft: 7 })), screenshots: [] },
   location: { kind: "map", areaId: active.areaId, areaName: active.areaName, since: now - 4 * 60_000 },
   activeRunId: active.id,
   segmentStart: now - 4 * 60_000,

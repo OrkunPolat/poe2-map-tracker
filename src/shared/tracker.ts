@@ -5,6 +5,8 @@ export interface TrackerOptions {
   /** Tablets stay in the setup and count down uses instead of being cleared after each map. */
   trackTabletUses: boolean;
   defaultTabletUses?: number;
+  /** Consumables stay in the setup for the next map. */
+  repeatCosts?: boolean;
   /** When set, only this character's deaths are counted. */
   characterName?: string;
   newId?: () => string;
@@ -77,6 +79,7 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
         waystone: s.pending.waystone,
         tablets: s.pending.tablets,
         costDiv: s.pending.tablets.reduce((sum, t) => sum + tabletCostPerUse(t), 0),
+        costs: s.pending.costs ?? [],
         loot: [],
         deaths: 0,
         mapTimeMs: 0,
@@ -91,6 +94,7 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
         pending: {
           waystone: undefined,
           tablets: opts.trackTabletUses ? consumeUse(s.pending.tablets, opts.defaultTabletUses ?? 10) : [],
+          costs: opts.repeatCosts ? (s.pending.costs ?? []) : [],
           screenshots: [],
         },
       };
@@ -189,7 +193,19 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
       return { ...state, pending: { ...state.pending, tablets: state.pending.tablets.filter((_, i) => i !== ev.index) } };
 
     case "clearPending":
-      return { ...state, pending: { tablets: [], screenshots: [] } };
+      return { ...state, pending: { tablets: [], screenshots: [], costs: [] } };
+
+    case "addPendingCost": {
+      const costs = state.pending.costs ?? [];
+      const hit = costs.find((c) => c.name === ev.name);
+      const next = hit
+        ? costs.map((c) => (c.name === ev.name ? { ...c, qty: c.qty + ev.qty } : c))
+        : [...costs, { name: ev.name, qty: ev.qty, unitDiv: ev.unitDiv }];
+      return { ...state, pending: { ...state.pending, costs: next.filter((c) => c.qty > 0) } };
+    }
+
+    case "clearPendingCosts":
+      return { ...state, pending: { ...state.pending, costs: [] } };
 
     case "reuseTablets": {
       const run = state.runs.find((r) => r.id === ev.runId);

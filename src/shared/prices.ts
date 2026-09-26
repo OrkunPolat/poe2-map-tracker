@@ -34,8 +34,18 @@ export function overviewToPrices(data: ExchangeOverview): Record<string, number>
   return out;
 }
 
+/** Tablet mechanic -> poe.ninja category holding that mechanic's consumables. */
+export const FARM_CATEGORY: Record<string, string> = {
+  Ritual: "Ritual",
+  Abyss: "Abyss",
+  Delirium: "Delirium",
+  Breach: "Breach",
+  Expedition: "Expedition",
+};
+
 export async function fetchPrices(league: string, fetchFn: typeof fetch, userAgent: string): Promise<PriceTable> {
   const divByName: Record<string, number> = { "Divine Orb": 1 };
+  const byCategory: Record<string, Array<{ name: string; div: number }>> = {};
   const errors: string[] = [];
   await Promise.all(
     PRICE_TYPES.map(async (type) => {
@@ -43,7 +53,11 @@ export async function fetchPrices(league: string, fetchFn: typeof fetch, userAge
       try {
         const res = await fetchFn(url, { headers: { "User-Agent": userAgent } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        Object.assign(divByName, overviewToPrices((await res.json()) as ExchangeOverview));
+        const prices = overviewToPrices((await res.json()) as ExchangeOverview);
+        Object.assign(divByName, prices);
+        byCategory[type] = Object.entries(prices)
+          .map(([name, div]) => ({ name, div }))
+          .sort((a, b) => b.div - a.div);
       } catch (e) {
         errors.push(`${type}: ${(e as Error).message}`);
       }
@@ -52,5 +66,5 @@ export async function fetchPrices(league: string, fetchFn: typeof fetch, userAge
   if (errors.length === PRICE_TYPES.length) throw new Error(`poe.ninja unreachable (${errors[0]})`);
   divByName["Divine Orb"] = 1;
   const ex = divByName["Exalted Orb"];
-  return { league, fetchedAt: Date.now(), divByName, exPerDiv: ex ? 1 / ex : undefined };
+  return { league, fetchedAt: Date.now(), divByName, byCategory, exPerDiv: ex ? 1 / ex : undefined };
 }

@@ -20,6 +20,8 @@ export const DEFAULT_SETTINGS: Settings = {
     "Greater Chaos Orb", "Perfect Chaos Orb", "Perfect Exalted Orb", "Greater Exalted Orb",
   ],
   trackTabletUses: true,
+  repeatCosts: true,
+  sessionGapMin: 30,
   defaultTabletUses: 10,
   captureCurrencyFromClipboard: false,
   alwaysOnTop: false,

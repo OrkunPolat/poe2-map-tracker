@@ -32,7 +32,10 @@ Her map'e **hangi waystone ve tabletlerle** girdiğini, **süreyi**, **ölümler
 | 🪨 **Waystone & tablet** | `Ctrl+Alt+C` ile Rarity, Pack Size, Monster Effectiveness ve tablet türleri kaydedilir |
 | 💰 **Loot & değerli item** | Currency butonları + unique'ler için elle Divine değeri (ör. `20` Mageblood) |
 | 🧾 **Tablet maliyeti** | "3 tablet 20 div, 10 kullanım" gir; map başına maliyet ve net kâr otomatik |
-| 📊 **İstatistik** | Farm, 3 vs 4 tablet, setup, saatlik ve waystone stat aralıkları |
+| 🧪 **Juice maliyeti** | Farm'ına göre poe.ninja'nın en pahalı 10 item'ı: Ritual → omen'ler, Abyss → abyss currency'leri, Breach → catalyst'ler… |
+| ⏱️ **Gerçek saatlik** | Oturum bazlı div/saat: hideout, trade ve craft süresi de dahil |
+| 📊 **İstatistik** | Oturumlar, farm, map, 3 vs 4 tablet, setup, saatlik ve waystone stat aralıkları |
+| 🔄 **Tek tık güncelleme** | Yeni sürüm çıkınca "Güncelle"ye bas, exe kendini yeniler; tekrar indirmen gerekmez |
 | 🖥️ **Overlay** | Oyun üstünde her zaman görünen panel, tıklayınca oyundan odağı çalmaz |
 | 📈 **Canlı fiyat** | poe.ninja PoE2 fiyatları, Divine bazında, 30 dk'da bir |
 
@@ -42,7 +45,7 @@ Her map'e **hangi waystone ve tabletlerle** girdiğini, **süreyi**, **ölümler
 > Oyunu **Windowed Fullscreen** modda aç, overlay ancak böyle görünür.
 
 1. **Hazırlık** (hideout'ta): Waystone'un ve tabletlerin üstüne gelip `Ctrl+Alt+C` yap. "Sonraki map hazırlığı" kartına düşerler.
-2. **Tablet maliyeti:** Tabletlerin altına toplam fiyatı ve kullanım sayısını gir, **Uygula**. Tabletler map'ten sonra hazırlıkta kalır, hakları azalır, bitince düşer.
+2. **Maliyetler:** Tabletlerin altına toplam fiyatı ve kullanım sayısını gir, **Uygula**. **Map maliyeti (juice)** kısmında farm'ının en pahalı item'larına tıklayarak omen, splinter vb. ekle ("Her map'te tekrarla" açıksa her map'e aynı juice yazılır).
 3. **Map'e gir:** Otomatik algılanır. Hideout'a gidip aynı map'e dönersen aynı kayıt devam eder.
 4. **Loot gir:** Butonlara tıkla ya da değerli item'ı Divine değeriyle ekle.
 5. **Sonuç:** Geçmiş'te tablo, İstatistik'te karşılaştırmalar, Ayarlar'dan Excel için CSV.
@@ -75,7 +78,9 @@ Sağ üstte duran küçük panel:
 
 ## 📊 İstatistik
 
-Her tabloda map sayısı, ortalama loot, ortalama maliyet, **net/map** ve **net/saat** var.
+Her tabloda map sayısı, ortalama loot, ortalama maliyet, **net/map**, ortalama süre ve **net/saat** var.
+
+**Oturumlar** sekmesi 30 dakikadan uzun aralarla ayrılan farm oturumlarını gösterir. Buradaki "gerçek net/saat" hideout ve trade süresini de sayar; map içi süreye göre hesaplanandan genelde düşüktür ama asıl kazancın budur. **Map** sekmesi hangi map'lerin daha çok kazandırdığını gösterir.
 
 <details open>
 <summary><b>Farm karşılaştırması</b> (Expedition, Breach…)</summary>
@@ -128,6 +133,8 @@ Veriler bilgisayarında durur: `%APPDATA%\poe2-map-tracker\tracker-data.json`
 | Map algılanmıyor | Debug sekmesinde log satırları görünüyor mu bak, satırları issue olarak paylaş |
 | Waystone statları boş | Debug sekmesindeki pano metnini issue olarak paylaş |
 | SmartScreen uyarısı | Build imzasız: **More info → Run anyway** |
+| GeForce Now | Desteklenmiyor: oyun bulutta çalıştığı için `Client.txt` bilgisayarında yok, map'ler otomatik algılanamaz |
+| Güncelleme | v0.5.0 ve sonrası kendini günceller. Daha eski sürümdeysen v0.5.0'ı bir kez elle indir |
 
 <details>
 <summary><b>Geliştirme</b></summary>

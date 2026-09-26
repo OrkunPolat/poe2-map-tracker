@@ -1,6 +1,22 @@
 import type { PriceTable, Settings, TrackerState } from "./types";
 
+export interface UpdateInfo {
+  version: string;
+  pageUrl: string;
+  assetUrl?: string;
+  assetName?: string;
+  size?: number;
+  /** portable: swap the .exe; installer: silent NSIS; manual: open the release page. */
+  mode: "portable" | "installer" | "manual";
+}
+
 export interface Status {
+  version: string;
+  update?: UpdateInfo;
+  /** 0..1 while downloading an update. */
+  updateProgress?: number;
+  updateError?: string;
+  updateCheckedAt?: number;
   logPath?: string;
   logFound: boolean;
   lastLogLineAt?: number;
@@ -38,6 +54,8 @@ export type UiEvent =
   | { type: "updatePendingTablet"; index: number; patch: { costDiv?: number; totalUses?: number; usesLeft?: number } }
   | { type: "setPendingTabletsCost"; totalDiv: number; usesPerTablet: number }
   | { type: "clearPending" }
+  | { type: "addPendingCost"; name: string; qty: number; unitDiv?: number }
+  | { type: "clearPendingCosts" }
   | { type: "reuseTablets"; runId: string };
 
 export interface Api {
@@ -49,6 +67,8 @@ export interface Api {
   exportCsv(): Promise<string | undefined>;
   refreshPrices(): Promise<void>;
   openDataFolder(): Promise<void>;
+  checkUpdate(): Promise<void>;
+  installUpdate(): Promise<void>;
   resizeOverlay(height: number): void;
   showMain(): void;
   /** Lets the overlay take keyboard focus while a text field is open. */

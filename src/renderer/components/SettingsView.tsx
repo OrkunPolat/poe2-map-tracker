@@ -94,6 +94,16 @@ export function SettingsView({ snap }: { snap: Snapshot }) {
           Tabletler map'ten sonra hazırlıkta kalsın, kullanım hakları azalsın (bitince düşer)
         </label>
         <label className="check">
+          Oturum arası (dk): bundan uzun ara yeni farm oturumu sayılır
+          <input
+            className="qty"
+            type="number"
+            min={5}
+            value={settings.sessionGapMin}
+            onChange={(e) => set({ sessionGapMin: Math.max(5, Number(e.target.value) || 30) })}
+          />
+        </label>
+        <label className="check">
           Varsayılan tablet kullanım hakkı
           <input
             className="qty"
@@ -111,6 +121,25 @@ export function SettingsView({ snap }: { snap: Snapshot }) {
           <input type="checkbox" checked={settings.alwaysOnTop} onChange={(e) => set({ alwaysOnTop: e.target.checked })} />
           Pencere her zaman üstte (oyun Windowed Fullscreen olmalı)
         </label>
+      </section>
+
+      <section>
+        <h3>Güncelleme</h3>
+        <div className="row">
+          <span>
+            Sürüm <b>v{status.version}</b>
+          </span>
+          <button onClick={() => void api().checkUpdate()}>Güncellemeleri kontrol et</button>
+          {status.update ? (
+            <button className="primary" onClick={() => void api().installUpdate()}>
+              v{status.update.version} yükle
+            </button>
+          ) : (
+            status.updateCheckedAt && <span className="ok">Güncel</span>
+          )}
+        </div>
+        {status.updateError && <p className="warn">{status.updateError}</p>}
+        <p className="hint">Açılışta ve 6 saatte bir GitHub'a bakar. Güncelle deyince yeni exe inip eskisinin yerine geçer, uygulama yeniden açılır; verilerin korunur.</p>
       </section>
 
       <section>

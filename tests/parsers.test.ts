@@ -84,3 +84,14 @@ describe("prices", () => {
     expect(() => overviewToPrices({ core: { primary: "exalted" } })).toThrow();
   });
 });
+
+describe("updater version compare", () => {
+  it("compares semver-ish tags", async () => {
+    const { isNewerVersion } = await import("../src/shared/version");
+    expect(isNewerVersion("v0.5.0", "0.4.0")).toBe(true);
+    expect(isNewerVersion("0.10.0", "0.9.3")).toBe(true);
+    expect(isNewerVersion("0.4.0", "0.4.0")).toBe(false);
+    expect(isNewerVersion("0.3.9", "0.4.0")).toBe(false);
+  });
+});
+it("formats long durations with hours", async () => { const { formatDuration } = await import("../src/shared/stats"); expect(formatDuration(10_926_000)).toBe("3:02:06"); expect(formatDuration(65_000)).toBe("1:05"); });

@@ -25,7 +25,9 @@ export function tabletSetupKey(run: Run): string {
     .join(" + ");
 }
 
-export const runCostDiv = (run: Run) => run.costDiv ?? 0;
+export const consumablesDiv = (run: Pick<Run, "costs">) => (run.costs ?? []).reduce((s, c) => s + c.qty * c.unitDiv, 0);
+/** Tablet share plus consumables. */
+export const runCostDiv = (run: Run) => (run.costDiv ?? 0) + consumablesDiv(run);
 export const runNetDiv = (run: Run, prices?: PriceTable) => runValueDiv(run, prices) - runCostDiv(run);
 
 /** Farm = the mechanic the tablets push; ties (2 Delirium + 2 Expedition) name both. */
@@ -52,6 +54,7 @@ export interface GroupSummary {
   avgNet: number;
   /** Net Divine per hour of in-map time; undefined when no time was recorded. */
   netPerHour?: number;
+  avgTimeMs: number;
   deaths: number;
   /** Sort hint for groups that have a natural order (hours, stat ranges). */
   order: number;
@@ -80,6 +83,7 @@ export function summarize(
       avgCost: cost / rs.length,
       avgNet: (totalDiv - cost) / rs.length,
       netPerHour: ms > 0 ? (totalDiv - cost) / (ms / 3_600_000) : undefined,
+      avgTimeMs: ms / rs.length,
       deaths: rs.reduce((a, r) => a + r.deaths, 0),
       order: orderOf ? Math.min(...rs.map(orderOf)) : 0,
     };
@@ -107,9 +111,11 @@ export function statBucket(value: number | undefined, step: number): { key: stri
 
 export function formatDuration(ms: number): string {
   const total = Math.round(ms / 1000);
-  const m = Math.floor(total / 60);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
 
 const CSV_HEADERS = [

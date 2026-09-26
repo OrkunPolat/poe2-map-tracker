@@ -1,8 +1,10 @@
 import { useState } from "react";
 import type { Snapshot } from "../shared/ipc";
 import { formatDuration, hourKeyAt, runCostDiv, runNetDiv, runValueDiv, tabletSetupKey } from "../shared/stats";
+import { currentSession, groupSessions, sessionNetPerHour } from "../shared/sessions";
 import { liveMapTime } from "../shared/tracker";
 import { api, fmtDiv, useNow, useSnapshot } from "./api";
+import { CostEditor } from "./components/CostEditor";
 import { LootPanel } from "./components/LootPanel";
 import { RunsTable } from "./components/RunsTable";
 import { DebugView, SettingsView } from "./components/SettingsView";
@@ -53,6 +55,19 @@ export function App() {
         </div>
       </header>
 
+      {status.update && (
+        <div className="banner update">
+          Yeni sürüm <b>v{status.update.version}</b> hazır (şu an v{status.version}).
+          {status.updateProgress != null ? (
+            <span> İndiriliyor… %{Math.round(status.updateProgress * 100)}</span>
+          ) : (
+            <button className="primary" onClick={() => void api().installUpdate()}>
+              {status.update.mode === "manual" ? "İndirme sayfasını aç" : "Güncelle ve yeniden başlat"}
+            </button>
+          )}
+          {status.updateError && <span className="warn"> {status.updateError}</span>}
+        </div>
+      )}
       {!status.logFound && (
         <div className="banner">
           Client.txt bulunamadı. Map takibi için <button onClick={() => setTab("settings")}>Ayarlar</button>'dan log dosyasını seç.
@@ -62,7 +77,7 @@ export function App() {
       <main>
         {tab === "track" && <TrackView snap={snap} now={now} />}
         {tab === "runs" && <RunsTable state={state} prices={prices} favorites={settings.favoriteCurrencies} now={now} />}
-        {tab === "stats" && <StatsView runs={state.runs} prices={prices} />}
+        {tab === "stats" && <StatsView runs={state.runs} prices={prices} gapMin={settings.sessionGapMin} />}
         {tab === "settings" && <SettingsView snap={snap} />}
         {tab === "debug" && <DebugView snap={snap} />}
       </main>
@@ -80,6 +95,8 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
   const todayNet = today.reduce((s, r) => s + runNetDiv(r, prices), 0);
   const thisHour = state.runs.filter((r) => hourKeyAt(r.startedAt) === hourKeyAt(now));
   const hourNet = thisHour.reduce((s, r) => s + runNetDiv(r, prices), 0);
+  const gapMs = settings.sessionGapMin * 60_000;
+  const session = currentSession(groupSessions(state.runs, gapMs, prices), now, gapMs, !!state.activeRunId);
 
   return (
     <div className="track">
@@ -106,6 +123,7 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
           <TabletCard key={i} t={t} onRemove={() => void api().dispatch({ type: "removePendingTablet", index: i })} />
         ))}
         {pending.tablets.length > 0 && <TabletCostForm count={pending.tablets.length} defaultUses={settings.defaultTabletUses} />}
+        <CostEditor costs={pending.costs ?? []} tabletTypes={pending.tablets.map((t) => t.type)} prices={prices} settings={settings} />
         <Screenshots files={pending.screenshots} />
       </section>
 
@@ -133,7 +151,7 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
                 <b>{current.deaths}</b>
               </div>
               <div>
-                <span>Tablet maliyeti</span>
+                <span>Maliyet</span>
                 <b>{runCostDiv(current) ? fmtDiv(runCostDiv(current)) : "–"}</b>
               </div>
               <div>
@@ -151,6 +169,12 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
           <p className="empty">Map'e girdiğinde burada süre, ölüm ve loot girişi görünür.</p>
         )}
         <div className="today">
+          {session && (
+            <div>
+              Oturum: <b>{formatDuration(now - session.start)}</b> · {session.runs.length} map · net <b>{fmtDiv(session.netDiv)} div</b> ·{" "}
+              <b className="gold">{fmtDiv(sessionNetPerHour(session, now) ?? 0)} div/saat</b> <span className="muted">(gerçek)</span>
+            </div>
+          )}
           <div>
             Bu saat ({new Date(now).getHours()}:00): <b>{thisHour.length}</b> map · net <b>{fmtDiv(hourNet)} div</b>
             {thisHour.length > 0 && <span className="muted"> · ort. {fmtDiv(hourNet / thisHour.length)}/map</span>}

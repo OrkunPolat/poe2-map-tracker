@@ -78,6 +78,14 @@ export interface ValuableDrop {
   valueDiv: number;
 }
 
+/** Something spent on a map besides tablets: omens, splinters, waystone... */
+export interface CostEntry {
+  name: string;
+  qty: number;
+  /** Price per unit in Divine when it was added. */
+  unitDiv: number;
+}
+
 export interface Run {
   id: string;
   startedAt: number;
@@ -91,6 +99,8 @@ export interface Run {
   loot: LootEntry[];
   /** Tablet cost charged to this map (price / uses per tablet), in Divine. */
   costDiv?: number;
+  /** Other consumables spent on this map. */
+  costs?: CostEntry[];
   /** Optional for data saved before this field existed. */
   drops?: ValuableDrop[];
   deaths: number;
@@ -105,6 +115,8 @@ export type LocationKind = "map" | "hideout" | "town" | "other" | "unknown";
 export interface Pending {
   waystone?: WaystoneInfo;
   tablets: TabletInfo[];
+  /** Optional for data saved before this field existed. */
+  costs?: CostEntry[];
   screenshots: string[];
 }
 
@@ -123,6 +135,10 @@ export interface Settings {
   characterName: string;
   screenshotHotkey: string;
   favoriteCurrencies: string[];
+  /** Consumables stay in the setup for the next map (same juice every map). */
+  repeatCosts: boolean;
+  /** A pause longer than this starts a new farm session. */
+  sessionGapMin: number;
   /** Tablets stay in the setup after a map and count down their uses. */
   trackTabletUses: boolean;
   defaultTabletUses: number;
@@ -140,6 +156,8 @@ export interface PriceTable {
   fetchedAt: number;
   /** Item name -> price in Divine. */
   divByName: Record<string, number>;
+  /** poe.ninja category -> items sorted by price, most expensive first. */
+  byCategory?: Record<string, Array<{ name: string; div: number }>>;
   /** Exalted Orbs per Divine Orb. */
   exPerDiv?: number;
 }
@@ -162,4 +180,6 @@ export type TrackerEvent =
   | { type: "updatePendingTablet"; index: number; patch: Pick<TabletInfo, "costDiv" | "totalUses" | "usesLeft"> }
   | { type: "setPendingTabletsCost"; totalDiv: number; usesPerTablet: number }
   | { type: "clearPending" }
+  | { type: "addPendingCost"; name: string; qty: number; unitDiv: number }
+  | { type: "clearPendingCosts" }
   | { type: "reuseTablets"; runId: string };

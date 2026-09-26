@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { formatDuration, hourKeyAt, runCostDiv, runNetDiv, tabletSetupKey } from "../shared/stats";
+import { currentSession, groupSessions, sessionNetPerHour } from "../shared/sessions";
 import { liveMapTime } from "../shared/tracker";
 import type { Run } from "../shared/types";
 import { api, fmtDiv, useNow, useSnapshot } from "./api";
@@ -29,6 +30,8 @@ export function Overlay() {
   const quick = settings.favoriteCurrencies.slice(0, 4);
   const hourRuns = state.runs.filter((r) => hourKeyAt(r.startedAt) === hourKeyAt(now));
   const hourNet = hourRuns.reduce((s, r) => s + runNetDiv(r, prices), 0);
+  const gapMs = settings.sessionGapMin * 60_000;
+  const session = currentSession(groupSessions(state.runs, gapMs, prices), now, gapMs, !!active);
 
   return (
     <div className="ov" ref={ref}>
@@ -97,13 +100,18 @@ export function Overlay() {
 
           <div className="ov-total">
             {inMap ? "Bu map" : "Son map"}: net <b>{fmtDiv(runNetDiv(last, prices))} div</b>
-            {runCostDiv(last) > 0 && <span> (tablet −{fmtDiv(runCostDiv(last))})</span>}
+            {runCostDiv(last) > 0 && <span> (maliyet −{fmtDiv(runCostDiv(last))})</span>}
           </div>
         </>
       )}
       <div className="ov-total">
         Bu saat: {hourRuns.length} map · net <b>{fmtDiv(hourNet)} div</b>
       </div>
+      {session && (
+        <div className="ov-total">
+          Oturum {formatDuration(now - session.start)}: <b>{fmtDiv(sessionNetPerHour(session, now) ?? 0)} div/saat</b>
+        </div>
+      )}
     </div>
   );
 }
