@@ -341,3 +341,24 @@ input.ov-val { width: 56px; flex: none; }
 .ov-total { margin-top: 4px; color: var(--muted); }
 .ov-total b { color: var(--text); }
 .qty-text { font-variant-numeric: tabular-nums; color: var(--text-2); }
+
+/* league picker, stash diff corrections, overlay toast */
+.league-select { padding: 6px 10px; background: var(--panel); }
+.stash-diff .label { text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--text-2); }
+.suspect { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; padding: 8px 10px; border-radius: 8px;
+  background: rgba(251, 191, 36, .1); border: 1px solid rgba(251, 191, 36, .3); color: #fde68a; font-size: 12px; }
+.suspect svg { flex: none; margin-top: 2px; }
+.diff-table tr { cursor: pointer; }
+.diff-table tr:hover td { background: var(--panel-3); }
+.diff-table tr.ignored td { text-decoration: line-through; opacity: .45; }
+.small-toggle { margin-top: 10px; font-size: 12px; }
+.small-toggle .switch { transform: scale(.85); }
+.runs tr.excluded td { opacity: .45; }
+.pill.muted-pill { background: var(--panel-3); color: var(--muted); }
+.pill.warn-pill { background: rgba(251, 191, 36, .15); color: #fbbf24; }
+.ov-toast { margin-top: 6px; padding: 6px 8px; border-radius: 8px; background: rgba(52, 211, 153, .12); border: 1px solid rgba(52, 211, 153, .35);
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.ov-toast span { color: var(--text-2); }
+.ov-toast b { font-size: 14px; margin-left: auto; }
+.ov-toast small { width: 100%; color: #fde68a; }
+.ov-toast.warn { background: rgba(251, 191, 36, .12); border-color: rgba(251, 191, 36, .35); }

@@ -28,6 +28,8 @@ export interface Status {
   /** Set while a stash tab is being read. */
   stashBusy?: boolean;
   stashMessage?: { at: number; ok: boolean; text: string };
+  /** The map whose automatic loot was just calculated (overlay shows it briefly). */
+  lastClosed?: { runId: string; areaName: string; gainDiv: number; spentDiv: number; warnings: string[]; at: number };
   /** Automatic stash reading for the current map: when it is due, or when it happened. */
   autoStash?: { runId: string; dueAt?: number; beforeAt?: number; beforeDiv?: number };
   /** Result of the last public-tab setup check. */
@@ -46,6 +48,8 @@ export interface Snapshot {
   settings: Settings;
   prices?: PriceTable;
   stash: StashState;
+  /** User-entered prices (already merged into `prices`); listed so they can be edited. */
+  customPrices: Record<string, number>;
   waystoneMods: { source: string; fetchedAt: string; families: WaystoneModFamily[] };
   status: Status;
   debug: DebugInfo;
@@ -57,6 +61,8 @@ export type UiEvent =
   | { type: "addLoot"; runId: string; name: string; qty: number }
   | { type: "setLootQty"; runId: string; name: string; qty: number }
   | { type: "setNote"; runId: string; note: string }
+  | { type: "toggleStashLootItem"; runId: string; name: string }
+  | { type: "setExcluded"; runId: string; excluded: boolean }
   | { type: "addDrop"; runId: string; name: string; valueDiv: number }
   | { type: "removeDrop"; runId: string; dropId: string }
   | { type: "finishRun" }
@@ -84,6 +90,8 @@ export interface Api {
   stashDeleteTab(tabId: string): Promise<void>;
   updateWaystoneMods(): Promise<string>;
   checkTabSetup(): Promise<void>;
+  /** Give an unpriced item a value in Divine; undefined removes it. */
+  setCustomPrice(name: string, div: number | undefined): Promise<void>;
   /** Screenshot of a region of the main window (CSS pixels) to a PNG file or the clipboard. */
   captureRect(rect: { x: number; y: number; width: number; height: number }, mode: "save" | "copy"): Promise<string>;
   copyText(text: string): void;

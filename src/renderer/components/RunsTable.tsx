@@ -3,13 +3,19 @@ import { formatDuration, runNetDiv, runValueDiv, tabletSetupKey } from "../../sh
 import { liveMapTime } from "../../shared/tracker";
 import type { PriceTable, Run, TrackerState } from "../../shared/types";
 import { api, fmtDiv } from "../api";
+import type { Snapshot } from "../../shared/ipc";
 import { LootPanel } from "./LootPanel";
+import { StashDiff } from "../App";
+import { stashLootTotals, stashLootWarnings } from "../../shared/stashDiff";
 import { Screenshots, TabletCard, WaystoneCard } from "./Items";
 
 export function RunsTable({
-  state, prices, favorites, now,
-}: { state: TrackerState; prices?: PriceTable; favorites: string[]; now: number }) {
+  state, prices, favorites, now, snap,
+}: { state: TrackerState; prices?: PriceTable; favorites: string[]; now: number; snap: Snapshot }) {
   const [open, setOpen] = useState<string>();
+  const gains = state.runs.filter((r) => r.stashLoot).map((r) => stashLootTotals(r, prices).gainDiv).sort((a, b) => a - b);
+  const median = gains.length ? gains[Math.floor(gains.length / 2)]! : 0;
+  const suspicious = (r: Run) => stashLootWarnings(r, prices, median).length > 0;
   const runs = [...state.runs].reverse();
 
   if (runs.length === 0) {
@@ -38,7 +44,10 @@ export function RunsTable({
             const isOpen = open === r.id;
             return (
               <Fragment key={r.id}>
-                <tr className={`${isOpen ? "open" : ""} ${r.id === state.activeRunId ? "active" : ""}`} onClick={() => setOpen(isOpen ? undefined : r.id)}>
+                <tr
+                  className={`${isOpen ? "open" : ""} ${r.id === state.activeRunId ? "active" : ""} ${r.excluded ? "excluded" : ""}`}
+                  onClick={() => setOpen(isOpen ? undefined : r.id)}
+                >
                   <td>{new Date(r.startedAt).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
                   <td>{r.areaName}</td>
                   <td className="muted">{w?.tier ?? "–"}</td>
@@ -58,6 +67,8 @@ export function RunsTable({
                       .map((l) => `${l.qty} ${l.name.replace(/ Orb$/, "")}`)
                       .join(", ")}
                     {r.stashLoot && <span className="pill tiny">stash</span>}
+                    {r.excluded && <span className="pill tiny muted-pill">hariç</span>}
+                    {!r.excluded && suspicious(r) && <span className="pill tiny warn-pill">şüpheli</span>}
                   </td>
                   <td className="num">{r.stashLoot || r.loot.length || r.drops?.length ? fmtDiv(runValueDiv(r, prices)) : "–"}</td>
                   <td className="num">
@@ -67,7 +78,7 @@ export function RunsTable({
                 {isOpen && (
                   <tr className="detail">
                     <td colSpan={9}>
-                      <RunDetail run={r} prices={prices} favorites={favorites} />
+                      <RunDetail run={r} prices={prices} favorites={favorites} snap={snap} />
                     </td>
                   </tr>
                 )}
@@ -80,7 +91,7 @@ export function RunsTable({
   );
 }
 
-function RunDetail({ run, prices, favorites }: { run: Run; prices?: PriceTable; favorites: string[] }) {
+function RunDetail({ run, prices, favorites, snap }: { run: Run; prices?: PriceTable; favorites: string[]; snap: Snapshot }) {
   const [note, setNote] = useState(run.note);
   return (
     <div className="run-detail">
@@ -95,20 +106,7 @@ function RunDetail({ run, prices, favorites }: { run: Run; prices?: PriceTable; 
         {run.stashLoot && (
           <>
             <h4>Stash farkı (otomatik)</h4>
-            <table className="loot-table">
-              <tbody>
-                {run.stashLoot.items.map((it) => (
-                  <tr key={it.name}>
-                    <td>{it.name}</td>
-                    <td className={`num ${it.qty > 0 ? "pos" : "neg"}`}>
-                      {it.qty > 0 ? "+" : ""}
-                      {it.qty}
-                    </td>
-                    <td className="num muted">{it.unitDiv != null ? `${fmtDiv(Math.abs(it.qty) * it.unitDiv)} div` : "fiyat yok"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <StashDiff run={run} snap={snap} />
           </>
         )}
         <h4>{run.stashLoot ? "Elle eklenen" : "Loot"}</h4>

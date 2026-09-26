@@ -10,6 +10,8 @@ export interface Persisted {
   settings: Settings;
   prices?: PriceTable;
   stash?: StashState;
+  /** Prices the user gave to items poe.ninja does not price (uniques, gems...), in Divine. */
+  customPrices?: Record<string, number>;
   /** Stash readings taken while in a map, keyed by run id (the "before" side of its loot). */
   stashSnaps?: Record<string, { ts: number; qty: Record<string, number> }>;
   /** Newer waystone mod list fetched from poe2db; the bundled one is used otherwise. */

@@ -7,6 +7,8 @@ export interface TrackerOptions {
   defaultTabletUses?: number;
   /** Consumables stay in the setup for the next map. */
   repeatCosts?: boolean;
+  /** League new runs are tagged with. */
+  league?: string;
   /** When set, only this character's deaths are counted. */
   characterName?: string;
   newId?: () => string;
@@ -76,6 +78,7 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
         areaName: prettyAreaId(ev.areaId),
         areaLevel: ev.level,
         seed: ev.seed,
+        league: opts.league,
         waystone: s.pending.waystone,
         tablets: s.pending.tablets,
         costDiv: s.pending.tablets.reduce((sum, t) => sum + tabletCostPerUse(t), 0),
@@ -178,6 +181,18 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
 
     case "setStashLoot":
       return updateRun(state, ev.runId, (r) => ({ ...r, stashLoot: ev.stashLoot }));
+
+    case "toggleStashLootItem":
+      return updateRun(state, ev.runId, (r) => {
+        if (!r.stashLoot) return r;
+        const ignored = new Set(r.stashLoot.ignored ?? []);
+        if (ignored.has(ev.name)) ignored.delete(ev.name);
+        else ignored.add(ev.name);
+        return { ...r, stashLoot: { ...r.stashLoot, ignored: [...ignored] } };
+      });
+
+    case "setExcluded":
+      return updateRun(state, ev.runId, (r) => ({ ...r, excluded: ev.excluded }));
 
     case "setNote":
       return updateRun(state, ev.runId, (r) => ({ ...r, note: ev.note }));

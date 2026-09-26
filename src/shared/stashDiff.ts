@@ -23,6 +23,56 @@ export function diffQty(before: Qty, after: Qty): Qty {
 
 export type StashLoot = NonNullable<Run["stashLoot"]>;
 
+/** Price per unit: frozen at reading time, else today's (incl. prices the user entered). */
+const unit = (it: { name: string; unitDiv?: number }, prices?: PriceTable) => it.unitDiv ?? prices?.divByName[it.name];
+
+/**
+ * Gain and spending of a map's stash diff, leaving out ignored lines. Items without any price
+ * count as 0 and are listed so the user can give them one.
+ */
+export function stashLootTotals(run: Pick<Run, "stashLoot">, prices?: PriceTable) {
+  const sl = run.stashLoot;
+  let gainDiv = 0;
+  let spentDiv = 0;
+  const unpriced: string[] = [];
+  if (!sl) return { gainDiv, spentDiv, unpriced };
+  const ignored = new Set(sl.ignored ?? []);
+  for (const it of sl.items) {
+    if (ignored.has(it.name)) continue;
+    const u = unit(it, prices);
+    if (u == null) {
+      unpriced.push(it.name);
+      continue;
+    }
+    const v = it.qty * u;
+    if (v > 0) gainDiv += v;
+    else spentDiv -= v;
+  }
+  return { gainDiv, spentDiv, unpriced };
+}
+
+/** Currencies a map cannot consume: if these go down, something else happened (trade, craft). */
+const NOT_SPENT_IN_MAPS = new Set(["Divine Orb", "Exalted Orb", "Chaos Orb", "Orb of Annulment", "Greater Exalted Orb", "Perfect Exalted Orb", "Mirror of Kalandra"]);
+
+/**
+ * Reasons a map's stash diff looks like it contains more than the map itself. `medianGain` is
+ * the typical automatic gain of other maps, to catch a sale landing in one map.
+ */
+export function stashLootWarnings(run: Pick<Run, "stashLoot">, prices: PriceTable | undefined, medianGain: number): string[] {
+  const sl = run.stashLoot;
+  if (!sl) return [];
+  const ignored = new Set(sl.ignored ?? []);
+  const out: string[] = [];
+  for (const it of sl.items) {
+    if (ignored.has(it.name) || it.qty >= 0 || !NOT_SPENT_IN_MAPS.has(it.name)) continue;
+    const v = -it.qty * (unit(it, prices) ?? 0);
+    if (it.name === "Divine Orb" || v >= 2) out.push(`${-it.qty} ${it.name} azaldı (trade/craft?)`);
+  }
+  const { gainDiv } = stashLootTotals(run, prices);
+  if (medianGain > 0 && gainDiv >= 30 && gainDiv > medianGain * 8) out.push(`kazanç normalin ${Math.round(gainDiv / medianGain)} katı (satış?)`);
+  return out;
+}
+
 /**
  * What one map changed in the stash: items that came in are loot, items that went out were
  * spent on the map (omens, splinters...). Prices are frozen at the time of the reading.

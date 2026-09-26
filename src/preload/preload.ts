@@ -20,6 +20,7 @@ const api: Api = {
   stashDeleteTab: (tabId) => ipcRenderer.invoke("stash:deleteTab", tabId),
   updateWaystoneMods: () => ipcRenderer.invoke("waystoneMods:update"),
   checkTabSetup: () => ipcRenderer.invoke("stash:checkSetup"),
+  setCustomPrice: (name, div) => ipcRenderer.invoke("price:custom", name, div),
   captureRect: (rect, mode) => ipcRenderer.invoke("capture:rect", rect, mode),
   copyText: (text) => ipcRenderer.send("clipboard:write", text),
   installUpdate: () => ipcRenderer.invoke("update:install"),

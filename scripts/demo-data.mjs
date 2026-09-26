@@ -53,6 +53,10 @@ runs.forEach((r, i) => {
   r.stashLoot = { items, gainDiv: gain, spentDiv: spent, beforeAt: r.startedAt + 150000, afterAt: r.startedAt + 800000 };
   r.loot = [];
 });
+// One map where divines were spent on a trade between maps (should be flagged), one with an unpriced gem.
+runs[5].stashLoot = { items: [{ name: "Divine Orb", qty: -38, unitDiv: 1 }, { name: "Rakiata's Flow", qty: 1 }, { name: "Exalted Orb", qty: 90, unitDiv: 0.002 }], gainDiv: 0.18, spentDiv: 38, beforeAt: 0, afterAt: 0 };
+runs[5].loot = [];
+runs.forEach((r) => (r.league = "Forbidden Rites"));
 // Last run is the one currently being played.
 const active = runs[runs.length - 1];
 active.loot = loot({ "Divine Orb": 2, "Orb of Annulment": 1 });
@@ -67,7 +71,7 @@ const state = {
 };
 // Yesterday's evening too, so the day timeline has more than one day.
 const yesterday = runs.slice(0, 6).map((r, i) => ({ ...r, id: `y${i}`, startedAt: r.startedAt - 86_400_000 - 3 * 3_600_000, endedAt: (r.endedAt ?? 0) - 86_400_000 - 3 * 3_600_000 }));
-state.runs = [...yesterday, ...runs];
+state.runs = [...yesterday.map((r) => ({ ...r, league: "Runes of Aldur" })), ...runs];
 
 const mods = JSON.parse(readFileSync(new URL("../src/shared/data/waystoneMods.json", import.meta.url), "utf8")).families;
 const dangerousMods = mods.filter((f) => /Critical Hit Chance|maximum Player Resistances|Monster Elemental Resistances/.test(f.danger[0])).map((f) => f.id);
@@ -79,6 +83,7 @@ const stash = {
     tab("~price 992 divine Ritual", [["Omen of Light", 6], ["Omen of Chance", 2], ["Omen of Whittling", 3], ["Omen of the Hunt", 9]]),
     tab("~price 991 divine Expedition", [["Perfect Flux", 2], ["Uhtred's Saga", 11], ["Verisium", 4200]]),
     tab("~price 994 divine Abyss", [["Kurgal's Gaze", 1], ["Preserved Cranium", 2], ["Ancient Jawbone", 4]]),
+    tab("~price 999 divine Gem", [["Rakiata's Flow", 1], ["Garukhan's Resolve", 1], ["Ngamahu's Chosen", 1]]),
   ],
 };
 writeFileSync(join(dir, "tracker-data.json"), JSON.stringify({ version: 1, state, stash, settings: { overlayPos: undefined, dangerousMods, onboarded: !process.env.DEMO_WIZARD, tradeAccount: "Orkun#1234" } }));

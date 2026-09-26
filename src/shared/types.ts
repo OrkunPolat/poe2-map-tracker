@@ -111,7 +111,13 @@ export interface Run {
     spentDiv: number;
     beforeAt: number;
     afterAt: number;
+    /** Item lines the user chose to leave out (e.g. a trade between two maps). */
+    ignored?: string[];
   };
+  /** Left out of every total and statistic (still listed in history). */
+  excluded?: boolean;
+  /** League the map was played in (poe.ninja league id); older runs have none. */
+  league?: string;
   /** Optional for data saved before this field existed. */
   drops?: ValuableDrop[];
   deaths: number;
@@ -227,6 +233,8 @@ export type TrackerEvent =
   | { type: "setLootQty"; runId: string; name: string; qty: number }
   | { type: "setNote"; runId: string; note: string }
   | { type: "setStashLoot"; runId: string; stashLoot: NonNullable<Run["stashLoot"]> }
+  | { type: "toggleStashLootItem"; runId: string; name: string }
+  | { type: "setExcluded"; runId: string; excluded: boolean }
   | { type: "addDrop"; runId: string; drop: ValuableDrop }
   | { type: "removeDrop"; runId: string; dropId: string }
   | { type: "finishRun"; ts: number }

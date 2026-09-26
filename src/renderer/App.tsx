@@ -6,6 +6,9 @@ import { liveMapTime } from "../shared/tracker";
 import type { Run } from "../shared/types";
 import { api, fmtDiv, fmtEx, fmtValue, useNow, useSnapshot } from "./api";
 import { dangerLines } from "./danger";
+import { ALL_LEAGUES, inLeague, leaguesOf } from "./league";
+import { counted } from "../shared/stats";
+import { stashLootTotals, stashLootWarnings } from "../shared/stashDiff";
 import { CostEditor } from "./components/CostEditor";
 import { DayTimeline } from "./components/DayTimeline";
 import { Icon } from "./components/Icons";
@@ -32,6 +35,7 @@ export function App() {
   const snap = useSnapshot();
   const now = useNow();
   const [wizard, setWizard] = useState<boolean | undefined>(undefined);
+  const [league, setLeague] = useState<string>();
   // "#tab=stats:farm" opens a page (and sub view) directly; used for preview screenshots.
   const [page, setPage] = useState<Page>(() => {
     const id = /tab=(\w+)/.exec(location.hash)?.[1];
@@ -41,6 +45,19 @@ export function App() {
   if (!snap) return <div className="loading">Yükleniyor…</div>;
   const { state, prices, status, settings } = snap;
   const showWizard = wizard ?? ((!settings.onboarded && !location.hash.includes("tab=")) || location.hash.includes("wizard="));
+  // Geçmiş and Analiz show the current league unless another one (or all) is picked.
+  const shownLeague = league ?? settings.league;
+  const leagueRuns = inLeague(state.runs, shownLeague, settings.league);
+  const leaguePicker = (
+    <select className="league-select" value={shownLeague} onChange={(e) => setLeague(e.target.value)}>
+      {leaguesOf(state.runs, settings.league).map((l) => (
+        <option key={l} value={l}>
+          {l}
+        </option>
+      ))}
+      <option value={ALL_LEAGUES}>Tüm ligler</option>
+    </select>
+  );
 
   return (
     <div className="app">
@@ -88,8 +105,8 @@ export function App() {
         )}
         {status.updateError && <div className="callout warn">Güncelleme hatası: {status.updateError}</div>}
         {page === "track" && <TrackView snap={snap} now={now} />}
-        {page === "history" && <HistoryView snap={snap} now={now} />}
-        {page === "stats" && <StatsView runs={state.runs} prices={prices} gapMin={settings.sessionGapMin} />}
+        {page === "history" && <HistoryView snap={snap} now={now} runs={leagueRuns} leaguePicker={leaguePicker} />}
+        {page === "stats" && <StatsView runs={counted(leagueRuns)} prices={prices} gapMin={settings.sessionGapMin} leaguePicker={leaguePicker} />}
         {page === "stash" && <StashView snap={snap} onSetup={() => setPage("settings")} />}
         {page === "settings" && <SettingsView snap={snap} onWizard={() => setWizard(true)} />}
       </main>
@@ -109,11 +126,12 @@ export function PageHead({ title, sub, children }: { title: string; sub?: string
   );
 }
 
-function HistoryView({ snap, now }: { snap: Snapshot; now: number }) {
+function HistoryView({ snap, now, runs, leaguePicker }: { snap: Snapshot; now: number; runs: Run[]; leaguePicker: React.ReactNode }) {
   const [view, setView] = useState<"list" | "day">(() => (location.hash.includes(":day") ? "day" : "list"));
   return (
     <>
-      <PageHead title="Geçmiş" sub={`${snap.state.runs.length} map kayıtlı`}>
+      <PageHead title="Geçmiş" sub={`${runs.length} map kayıtlı`}>
+        {leaguePicker}
         <div className="seg">
           <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>
             Liste
@@ -124,9 +142,9 @@ function HistoryView({ snap, now }: { snap: Snapshot; now: number }) {
         </div>
       </PageHead>
       {view === "list" ? (
-        <RunsTable state={snap.state} prices={snap.prices} favorites={snap.settings.favoriteCurrencies} now={now} />
+        <RunsTable state={{ ...snap.state, runs }} prices={snap.prices} favorites={snap.settings.favoriteCurrencies} now={now} snap={snap} />
       ) : (
-        <DayTimeline runs={snap.state.runs} prices={snap.prices} />
+        <DayTimeline runs={counted(runs)} prices={snap.prices} />
       )}
     </>
   );
@@ -138,7 +156,8 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
   const active = state.runs.find((r) => r.id === state.activeRunId);
   const current = active ?? state.runs[state.runs.length - 1];
   const gapMs = settings.sessionGapMin * 60_000;
-  const session = currentSession(groupSessions(state.runs, gapMs, prices), now, gapMs, !!active);
+  const liveRuns = counted(inLeague(state.runs, settings.league, settings.league));
+  const session = currentSession(groupSessions(liveRuns, gapMs, prices), now, gapMs, !!active);
   const auto = settings.autoStash && !!settings.tradeAccount;
   // The map before the current one is where the automatic loot shows up once it is closed.
   const idx = current ? state.runs.findIndex((r) => r.id === current.id) : -1;
@@ -182,7 +201,7 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
                   label="Net"
                   value={fmtDiv(runNetDiv(current, prices))}
                   tone={runNetDiv(current, prices) >= 0 ? "pos" : "neg"}
-                  sub={runCostDiv(current) ? `maliyet ${fmtDiv(runCostDiv(current))}` : undefined}
+                  sub={runCostDiv(current, prices) ? `maliyet ${fmtDiv(runCostDiv(current, prices))}` : undefined}
                 />
               </div>
 
@@ -257,32 +276,67 @@ function AutoLootStatus({ snap, now, current, previous }: { snap: Snapshot; now:
                 ? "Stash okunuyor…"
                 : "Map'e girince stash otomatik okunur."}
       </div>
-      {shown?.stashLoot && (
-        <>
-          <div className="label">
-            {shown.id === current.id ? "Bu map" : `Önceki map · ${shown.areaName}`} <span className="pos">+{fmtDiv(shown.stashLoot.gainDiv)} div</span>
-            {shown.stashLoot.spentDiv > 0 && <span className="neg"> · harcanan {fmtDiv(shown.stashLoot.spentDiv)} div</span>}
-          </div>
-          {shown.stashLoot.items.length === 0 ? (
-            <div className="placeholder">Stash'te değişiklik yok</div>
-          ) : (
-            <table className="loot-table">
-              <tbody>
-                {shown.stashLoot.items.slice(0, 10).map((it) => (
-                  <tr key={it.name}>
-                    <td>{it.name}</td>
-                    <td className={`num ${it.qty > 0 ? "pos" : "neg"}`}>
-                      {it.qty > 0 ? "+" : ""}
-                      {it.qty}
-                    </td>
-                    <td className="num muted">{it.unitDiv != null ? fmtValue(Math.abs(it.qty) * it.unitDiv, prices?.exPerDiv) : "fiyat yok"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </>
+      {shown?.stashLoot && <StashDiff run={shown} snap={snap} title={shown.id === current.id ? "Bu map" : `Önceki map · ${shown.areaName}`} limit={10} />}
+    </div>
+  );
+}
+
+/** A map's stash diff: warnings, lines (click to leave one out), and a switch to exclude the map. */
+export function StashDiff({ run, snap, title, limit }: { run: Run; snap: Snapshot; title?: string; limit?: number }) {
+  const { prices } = snap;
+  if (!run.stashLoot) return null;
+  const { gainDiv, spentDiv } = stashLootTotals(run, prices);
+  const gains = snap.state.runs.filter((r) => r.stashLoot && r.id !== run.id).map((r) => stashLootTotals(r, prices).gainDiv).sort((a, b) => a - b);
+  const warnings = stashLootWarnings(run, prices, gains.length ? gains[Math.floor(gains.length / 2)]! : 0);
+  const ignored = new Set(run.stashLoot.ignored ?? []);
+  const items = limit ? run.stashLoot.items.slice(0, limit) : run.stashLoot.items;
+  return (
+    <div className="stash-diff">
+      <div className="label">
+        {title && <>{title} </>}
+        <span className="pos">+{fmtDiv(gainDiv)} div</span>
+        {spentDiv > 0 && <span className="neg"> · harcanan {fmtDiv(spentDiv)} div</span>}
+      </div>
+      {warnings.length > 0 && (
+        <div className="suspect">
+          <Icon name="alert" size={14} />
+          <span>
+            Şüpheli: {warnings.join(" · ")}. Trade/craft satırlarına tıklayıp hesaptan çıkar ya da map'i tamamen hariç tut.
+          </span>
+        </div>
       )}
+      {run.stashLoot.items.length === 0 ? (
+        <div className="placeholder">Stash'te değişiklik yok</div>
+      ) : (
+        <table className="loot-table diff-table">
+          <tbody>
+            {items.map((it) => {
+              const u = it.unitDiv ?? prices?.divByName[it.name];
+              const off = ignored.has(it.name);
+              return (
+                <tr
+                  key={it.name}
+                  className={off ? "ignored" : ""}
+                  title={off ? "Hesaba kat" : "Bu satırı hesaptan çıkar"}
+                  onClick={() => void api().dispatch({ type: "toggleStashLootItem", runId: run.id, name: it.name })}
+                >
+                  <td>{it.name}</td>
+                  <td className={`num ${it.qty > 0 ? "pos" : "neg"}`}>
+                    {it.qty > 0 ? "+" : ""}
+                    {it.qty}
+                  </td>
+                  <td className="num muted">{u != null ? fmtValue(Math.abs(it.qty) * u, prices?.exPerDiv) : <span className="warn">fiyat yok</span>}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      <label className="toggle small-toggle">
+        <input type="checkbox" checked={!!run.excluded} onChange={(e) => void api().dispatch({ type: "setExcluded", runId: run.id, excluded: e.target.checked })} />
+        <span className="switch" />
+        <span>Bu map'i istatistiklere katma</span>
+      </label>
     </div>
   );
 }

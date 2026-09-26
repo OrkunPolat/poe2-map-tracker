@@ -255,3 +255,33 @@ describe("automatic stash diff", () => {
     expect(runCostDiv(run)).toBe(7.5); // the omen typed in as juice is the same one the diff saw
   });
 });
+
+describe("stash diff corrections", () => {
+  const run = (items: Array<[string, number, number?]>, ignored?: string[]) => ({
+    stashLoot: { items: items.map(([name, qty, unitDiv]) => ({ name, qty, unitDiv })), gainDiv: 0, spentDiv: 0, beforeAt: 0, afterAt: 0, ignored },
+  });
+  it("prices unpriced items with user prices and skips ignored lines", async () => {
+    const { stashLootTotals } = await import("../src/shared/stashDiff");
+    const prices = { league: "x", fetchedAt: 0, divByName: { "Rakiata's Flow": 120 } }; // user-entered
+    const r = run([["Divine Orb", 3, 1], ["Rakiata's Flow", 1], ["Mystery Unique", 1], ["Omen of Light", -1, 7.5]]);
+    expect(stashLootTotals(r, prices)).toEqual({ gainDiv: 123, spentDiv: 7.5, unpriced: ["Mystery Unique"] });
+    const ignoredTrade = run([["Divine Orb", -50, 1], ["Rakiata's Flow", 1]], ["Divine Orb", "Rakiata's Flow"]);
+    expect(stashLootTotals(ignoredTrade, prices)).toEqual({ gainDiv: 0, spentDiv: 0, unpriced: [] });
+  });
+
+  it("flags maps whose diff looks like a trade or craft", async () => {
+    const { stashLootWarnings } = await import("../src/shared/stashDiff");
+    const prices = { league: "x", fetchedAt: 0, divByName: { "Divine Orb": 1, "Omen of Light": 7.5 } };
+    expect(stashLootWarnings(run([["Divine Orb", 2, 1], ["Omen of Light", -2, 7.5]]), prices, 3)).toEqual([]); // juice is normal
+    expect(stashLootWarnings(run([["Divine Orb", -40, 1]]), prices, 3)[0]).toContain("40 Divine Orb azaldı");
+    expect(stashLootWarnings(run([["Divine Orb", 60, 1]]), prices, 3)[0]).toContain("normalin 20 katı");
+    expect(stashLootWarnings(run([["Divine Orb", -40, 1]], ["Divine Orb"]), prices, 3)).toEqual([]); // user ignored it
+  });
+
+  it("tags new runs with the league and lets the user exclude a run", () => {
+    let s = play(initialState(), [{ type: "areaGenerated", ts: 0, level: 80, areaId: "MapA", seed: "1" }], { ...opts, league: "Forbidden Rites" });
+    expect(s.runs[0]!.league).toBe("Forbidden Rites");
+    s = play(s, [{ type: "setExcluded", runId: s.runs[0]!.id, excluded: true }]);
+    expect(s.runs[0]!.excluded).toBe(true);
+  });
+});

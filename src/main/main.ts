@@ -21,7 +21,8 @@ import bundledWaystoneMods from "../shared/data/waystoneMods.json";
 import { parseWaystoneMods } from "../shared/waystoneModsParse.mjs";
 import type { WaystoneModFamily } from "../shared/waystoneDanger";
 import { emptyStash, replaceTradeTabs, setItemQty, stashValueDiv, upsertTab } from "../shared/stash";
-import { diffQty, stashQty, toStashLoot, type Qty } from "../shared/stashDiff";
+import { diffQty, stashLootTotals, stashLootWarnings, stashQty, toStashLoot, type Qty } from "../shared/stashDiff";
+import type { PriceTable } from "../shared/types";
 
 // Test hooks: POE2T_DATA isolates the data dir, POE2T_LOG forces a log file, POE2T_SMOKE writes a screenshot and quits.
 if (process.env.POE2T_DATA) app.setPath("userData", resolve(process.env.POE2T_DATA));
@@ -40,11 +41,23 @@ const status: Snapshot["status"] = { version: app.getVersion(), logFound: false,
 const debug: Snapshot["debug"] = { recentLog: [] };
 const shotsDir = () => join(app.getPath("userData"), "screenshots");
 
+/** poe.ninja prices with the user's own prices for items poe.ninja does not list laid on top. */
+function effPrices(): PriceTable | undefined {
+  const custom = store.data.customPrices ?? {};
+  const p = store.data.prices;
+  if (!p && Object.keys(custom).length === 0) return undefined;
+  return p ? { ...p, divByName: { ...p.divByName, ...custom } } : { league: store.data.settings.league, fetchedAt: 0, divByName: { ...custom } };
+}
+
 function snapshot(): Snapshot {
-  const { state, settings, prices } = store.data;
+  const { state, settings } = store.data;
+  const prices = effPrices();
   const bundled = bundledWaystoneMods as { source: string; fetchedAt: string; families: WaystoneModFamily[] };
   const waystoneMods = store.data.waystoneMods ? { source: bundled.source, ...store.data.waystoneMods } : bundled;
-  return { state, settings, prices, stash: store.data.stash ?? emptyStash(), waystoneMods, status, debug, now: Date.now() };
+  return {
+    state, settings, prices, stash: store.data.stash ?? emptyStash(), customPrices: store.data.customPrices ?? {},
+    waystoneMods, status, debug, now: Date.now(),
+  };
 }
 
 let pushTimer: NodeJS.Timeout | undefined;
@@ -66,6 +79,7 @@ function apply(ev: TrackerEvent) {
     repeatCosts: settings.repeatCosts,
     defaultTabletUses: settings.defaultTabletUses,
     characterName: settings.characterName.trim() || undefined,
+    league: settings.league || undefined,
   });
   store.save();
   push();
@@ -155,7 +169,7 @@ function onClipboard(text: string) {
 
 // ---------- Prices ----------
 function priceOf(name: string): number | undefined {
-  return store.data.prices?.divByName[name];
+  return effPrices()?.divByName[name];
 }
 
 async function refreshPrices() {
@@ -262,7 +276,7 @@ async function refreshStash(fullCheck = false) {
   if (ok) closeLastRun(stashQty(store.data.stash?.tabs ?? []));
   const stash = store.data.stash ?? emptyStash();
   if (stash.tabs.length) {
-    store.data.stash = { ...stash, history: [...stash.history, { ts: Date.now(), div: stashValueDiv(stash, store.data.prices) }].slice(-500) };
+    store.data.stash = { ...stash, history: [...stash.history, { ts: Date.now(), div: stashValueDiv(stash, effPrices()) }].slice(-500) };
     store.save();
   }
   push();
@@ -317,7 +331,7 @@ async function takeBefore(runId: string) {
   if (!qty) return;
   const snaps = (store.data.stashSnaps ??= {});
   snaps[runId] = { ts: Date.now(), qty };
-  const priceOfQty = (q: Qty) => Object.entries(q).reduce((s, [n, c]) => s + c * (store.data.prices?.divByName[n] ?? 0), 0);
+  const priceOfQty = (q: Qty) => Object.entries(q).reduce((s, [n, c]) => s + c * (priceOf(n) ?? 0), 0);
   status.autoStash = { runId, beforeAt: Date.now(), beforeDiv: priceOfQty(qty) };
   // Keep the last 40 readings; older runs are either closed or never will be.
   const keep = new Set(store.data.state.runs.slice(-40).map((r) => r.id));
@@ -347,13 +361,23 @@ function closeLastRun(qty: Qty) {
 }
 
 function closeRun(runId: string, before: { ts: number; qty: Qty }, after: Qty) {
-  const loot = toStashLoot(diffQty(before.qty, after), store.data.prices, before.ts, Date.now());
+  const prices = effPrices();
+  const loot = toStashLoot(diffQty(before.qty, after), prices, before.ts, Date.now());
   apply({ type: "setStashLoot", runId, stashLoot: loot });
-  const run = store.data.state.runs.find((r) => r.id === runId);
+  const run = store.data.state.runs.find((r) => r.id === runId)!;
+  // Typical automatic gain of the other maps, to recognise a sale or purchase landing in this one.
+  const gains = store.data.state.runs
+    .filter((r) => r.stashLoot && r.id !== runId)
+    .map((r) => stashLootTotals(r, prices).gainDiv)
+    .sort((a, b) => a - b);
+  const median = gains.length ? gains[Math.floor(gains.length / 2)]! : 0;
+  const { gainDiv, spentDiv } = stashLootTotals(run, prices);
+  const warnings = stashLootWarnings(run, prices, median);
+  status.lastClosed = { runId, areaName: run.areaName, gainDiv, spentDiv, warnings, at: Date.now() };
   status.stashMessage = {
     at: Date.now(),
-    ok: true,
-    text: `${run?.areaName ?? "Map"}: stash farkı +${loot.gainDiv.toFixed(2)} div${loot.spentDiv ? `, harcanan ${loot.spentDiv.toFixed(2)} div` : ""}.`,
+    ok: warnings.length === 0,
+    text: `${run.areaName}: stash farkı +${gainDiv.toFixed(2)} div${spentDiv ? `, harcanan ${spentDiv.toFixed(2)} div` : ""}${warnings.length ? ` · şüpheli: ${warnings.join(", ")}` : ""}.`,
   };
   push();
 }
@@ -551,6 +575,13 @@ function setupIpc() {
   ipcMain.handle("update:check", () => checkUpdate());
   ipcMain.handle("stash:refresh", () => refreshStash());
   ipcMain.handle("stash:checkSetup", () => refreshStash(true));
+  ipcMain.handle("price:custom", (_, name: string, div: number | undefined) => {
+    const custom = (store.data.customPrices ??= {});
+    if (div == null || !Number.isFinite(div) || div < 0) delete custom[name];
+    else custom[name] = div;
+    store.save();
+    push();
+  });
   ipcMain.handle("waystoneMods:update", async () => {
     const res = await net.fetch("https://poe2db.tw/us/Waystones", { headers: { "User-Agent": USER_AGENT } });
     if (!res.ok) throw new Error(`poe2db HTTP ${res.status}`);

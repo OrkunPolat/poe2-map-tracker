@@ -100,9 +100,9 @@ export function LootPanel({ run, favorites, prices }: { run: Run; favorites: str
 
       <div className="total">
         Loot <b>{fmtDiv(total)} div</b> <span className="muted">{fmtEx(total, prices?.exPerDiv)}</span>
-        {runCostDiv(run) > 0 && (
+        {runCostDiv(run, prices) > 0 && (
           <>
-            {" "}− maliyet {fmtDiv(runCostDiv(run))} = net <b>{fmtDiv(total - runCostDiv(run))} div</b>
+            {" "}− maliyet {fmtDiv(runCostDiv(run, prices))} = net <b>{fmtDiv(total - runCostDiv(run, prices))} div</b>
           </>
         )}
         {missing.length > 0 && <span className="warn"> · fiyatsız: {missing.join(", ")}</span>}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { formatDuration, hourKeyAt, runCostDiv, runNetDiv, tabletSetupKey } from "../shared/stats";
+import { counted, formatDuration, hourKeyAt, runCostDiv, runNetDiv, tabletSetupKey } from "../shared/stats";
 import { currentSession, groupSessions, sessionNetPerHour } from "../shared/sessions";
 import { liveMapTime } from "../shared/tracker";
 import type { Run } from "../shared/types";
@@ -32,7 +32,8 @@ export function Overlay() {
   const hourRuns = state.runs.filter((r) => hourKeyAt(r.startedAt) === hourKeyAt(now));
   const hourNet = hourRuns.reduce((s, r) => s + runNetDiv(r, prices), 0);
   const gapMs = settings.sessionGapMin * 60_000;
-  const session = currentSession(groupSessions(state.runs, gapMs, prices), now, gapMs, !!active);
+  const liveRuns = counted(state.runs.filter((r) => (r.league ?? settings.league) === settings.league));
+  const session = currentSession(groupSessions(liveRuns, gapMs, prices), now, gapMs, !!active);
 
   return (
     <div className="ov" ref={ref}>
@@ -105,16 +106,22 @@ export function Overlay() {
 
           <div className="ov-total">
             {inMap ? "Bu map" : "Son map"}: net <b>{fmtDiv(runNetDiv(last, prices))} div</b>
-            {runCostDiv(last) > 0 && <span> (maliyet −{fmtDiv(runCostDiv(last))})</span>}
+            {runCostDiv(last, prices) > 0 && <span> (maliyet −{fmtDiv(runCostDiv(last, prices))})</span>}
           </div>
         </>
       )}
       <div className="ov-total">
         Bu saat: {hourRuns.length} map · net <b>{fmtDiv(hourNet)} div</b>
       </div>
-      {status.stashBusy && <div className="ov-total gold">Stash okunuyor…</div>}
-      {!status.stashBusy && status.stashMessage && now - status.stashMessage.at < 8000 && (
-        <div className={`ov-total ${status.stashMessage.ok ? "ok" : "warn"}`}>{status.stashMessage.text}</div>
+      {status.lastClosed && now - status.lastClosed.at < 12_000 && (
+        <div className={`ov-toast ${status.lastClosed.warnings.length ? "warn" : ""}`}>
+          <span>Önceki map · {status.lastClosed.areaName}</span>
+          <b className={status.lastClosed.gainDiv - status.lastClosed.spentDiv >= 0 ? "pos" : "neg"}>
+            {status.lastClosed.gainDiv - status.lastClosed.spentDiv >= 0 ? "+" : ""}
+            {fmtDiv(status.lastClosed.gainDiv - status.lastClosed.spentDiv)} div
+          </b>
+          {status.lastClosed.warnings.length > 0 && <small>şüpheli: {status.lastClosed.warnings[0]}</small>}
+        </div>
       )}
       {session && (
         <div className="ov-total">

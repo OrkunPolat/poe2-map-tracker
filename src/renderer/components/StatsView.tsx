@@ -19,11 +19,12 @@ const VIEWS = [
 ] as const;
 type View = (typeof VIEWS)[number][0];
 
-export function StatsView({ runs, prices, gapMin }: { runs: Run[]; prices?: PriceTable; gapMin: number }) {
+export function StatsView({ runs, prices, gapMin, leaguePicker }: { runs: Run[]; prices?: PriceTable; gapMin: number; leaguePicker?: React.ReactNode }) {
   // "#tab=stats:count" opens a sub-view directly (preview screenshots).
   const [view, setView] = useState<View>(() => VIEWS.find(([id]) => location.hash.endsWith(`:${id}`))?.[0] ?? "session");
   const head = (
     <PageHead title="Analiz" sub={`${runs.length} map`}>
+      {leaguePicker}
       <div className="seg">
         {VIEWS.map(([id, label]) => (
           <button key={id} className={view === id ? "on" : ""} onClick={() => setView(id)}>

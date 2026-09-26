@@ -8,6 +8,7 @@ import { Trend } from "./Trend";
 import { sellHints } from "../../shared/trends";
 import { PageHead } from "../App";
 import { Icon } from "./Icons";
+import { UnpricedCard } from "./Unpriced";
 
 /** Special tabs worth reading (Map, Gem and Unique tabs are left out on purpose). */
 const EXPECTED = ["Currency", "Essences", "Abyss", "Ritual", "Delirium", "Breach", "Expedition", "Fragments", "Runes", "SoulCores", "Idols"];
@@ -68,6 +69,8 @@ export function StashView({ snap, onSetup }: { snap: Snapshot; onSetup: () => vo
           {status.stashMessage.text} <span className="muted">· {ago(status.stashMessage.at, now)}</span>
         </p>
       )}
+
+      <UnpricedCard snap={snap} />
 
       <SellHints snap={snap} />
 

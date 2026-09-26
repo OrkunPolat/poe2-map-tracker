@@ -1,9 +1,13 @@
 import type { PriceTable, Run } from "./types";
+import { stashLootTotals } from "./stashDiff";
+
+/** Runs that count toward totals: not excluded by the user. */
+export const counted = (runs: Run[]) => runs.filter((r) => !r.excluded);
 
 /** Uses the price recorded with the loot; falls back to today's price for items added without one. */
 export function runValueDiv(run: Run, prices?: PriceTable): number {
   const loot = run.loot.reduce((sum, l) => sum + l.qty * (l.unitDiv ?? prices?.divByName[l.name] ?? 0), 0);
-  return loot + dropsValueDiv(run) + (run.stashLoot?.gainDiv ?? 0);
+  return loot + dropsValueDiv(run) + stashLootTotals(run, prices).gainDiv;
 }
 
 export function dropsValueDiv(run: Run): number {
@@ -30,12 +34,12 @@ export const consumablesDiv = (run: Pick<Run, "costs">) => (run.costs ?? []).red
  * Tablet share plus consumables. When the stash diff already saw an item leave the stash, the
  * hand-entered juice line for that item is not counted a second time.
  */
-export const runCostDiv = (run: Run) => {
+export const runCostDiv = (run: Run, prices?: PriceTable) => {
   const seenSpent = new Set((run.stashLoot?.items ?? []).filter((i) => i.qty < 0).map((i) => i.name));
   const manual = (run.costs ?? []).filter((c) => !seenSpent.has(c.name)).reduce((s, c) => s + c.qty * c.unitDiv, 0);
-  return (run.costDiv ?? 0) + manual + (run.stashLoot?.spentDiv ?? 0);
+  return (run.costDiv ?? 0) + manual + stashLootTotals(run, prices).spentDiv;
 };
-export const runNetDiv = (run: Run, prices?: PriceTable) => runValueDiv(run, prices) - runCostDiv(run);
+export const runNetDiv = (run: Run, prices?: PriceTable) => runValueDiv(run, prices) - runCostDiv(run, prices);
 
 /** Farm = the mechanic the tablets push; ties (2 Delirium + 2 Expedition) name both. */
 export function farmKey(run: Run): string {
@@ -80,7 +84,7 @@ export function summarize(
   }
   return [...groups.entries()].map(([key, rs]) => {
     const totalDiv = rs.reduce((a, r) => a + runValueDiv(r, prices), 0);
-    const cost = rs.reduce((a, r) => a + runCostDiv(r), 0);
+    const cost = rs.reduce((a, r) => a + runCostDiv(r, prices), 0);
     const ms = rs.reduce((a, r) => a + r.mapTimeMs, 0);
     return {
       key,
@@ -161,7 +165,7 @@ export function runsToCsv(runs: Run[], prices?: PriceTable): string {
       r.loot.map((l) => `${l.qty}x ${l.name}`).join(", "),
       (r.drops ?? []).map((d) => `${d.name} (${d.valueDiv} div)`).join(", "),
       runValueDiv(r, prices).toFixed(2).replace(".", ","),
-      runCostDiv(r).toFixed(2).replace(".", ","),
+      runCostDiv(r, prices).toFixed(2).replace(".", ","),
       runNetDiv(r, prices).toFixed(2).replace(".", ","),
       r.note,
     ].map(cell).join(";");

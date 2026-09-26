@@ -6,6 +6,7 @@ import { PageHead } from "../App";
 import { TabCheckList } from "./Onboarding";
 import { TradeSetup } from "./StashView";
 import { WaystoneView } from "./WaystoneView";
+import { CustomPriceList } from "./Unpriced";
 
 const SECTIONS = [
   ["general", "Genel"],
@@ -211,6 +212,9 @@ function LootSettings({ snap }: { snap: Snapshot }) {
       <Field label="Loot butonları" hint="Elle girişte gösterilen item'lar; her satıra bir tane, oyundaki İngilizce adıyla.">
         <textarea rows={7} value={favs} onChange={(e) => setFavs(e.target.value)} />
         <button onClick={() => set({ favoriteCurrencies: favs.split("\n").map((s) => s.trim()).filter(Boolean) })}>Kaydet</button>
+      </Field>
+      <Field label="Elle girilen fiyatlar" hint="poe.ninja'da olmayan item'lar (unique, gem…) için verdiğin değerler.">
+        <CustomPriceList snap={snap} />
       </Field>
       <Field label="Tabletler">
         <Toggle checked={settings.trackTabletUses} onChange={(v) => set({ trackTabletUses: v })}>

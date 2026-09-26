@@ -32,6 +32,9 @@ Her map'e **hangi waystone ve tabletlerle** girdiğini, **süreyi**, **ölümler
 | 🪨 **Waystone & tablet** | `Ctrl+Alt+C` ile Rarity, Pack Size, Monster Effectiveness ve tablet türleri kaydedilir |
 | 💰 **Loot & değerli item** | Currency butonları + unique'ler için elle Divine değeri (ör. `20` Mageblood) |
 | 🔁 **Otomatik loot** | Map'e girince stash okunur, sonraki okumayla farkı o map'in kazancı olur; elle giriş gerekmez |
+| 🏷️ **Kendi fiyatların** | poe.ninja'da olmayan unique/gem'lere bir kez değer ver; stash ve map kazancında kullanılır |
+| 🚩 **Şüpheli map** | Map'ler arası trade/craft stash farkına karışırsa işaretlenir; satırı ya da map'i hesaptan çıkarabilirsin |
+| 🗂️ **Lig ayrımı** | Her map ligini hatırlar; Geçmiş ve Analiz varsayılan olarak aktif ligi gösterir |
 | 🧾 **Tablet maliyeti** | "3 tablet 20 div, 10 kullanım" gir; map başına maliyet ve net kâr otomatik |
 | 🧪 **Juice maliyeti** | Farm'ına göre poe.ninja'nın en pahalı 10 item'ı: Ritual → omen'ler, Abyss → abyss currency'leri, Breach → catalyst'ler… |
 | ⏱️ **Gerçek saatlik** | Oturum bazlı div/saat: hideout, trade ve craft süresi de dahil |
