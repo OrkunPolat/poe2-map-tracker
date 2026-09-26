@@ -193,6 +193,8 @@ export interface Settings {
   autoSkipPrices?: number[];
   /** The skip list was set (by default rule or by the user); do not recompute it. */
   autoSkipConfigured?: boolean;
+  /** Stash items whose unit price is below this are hidden and left out of stash totals. */
+  stashMinValue?: { amount: number; unit: CurrencyUnit };
   /** A new league the user chose not to switch to (so it is not offered again). */
   dismissedLeague?: string;
   gfnEndHotkey: string;
@@ -214,6 +216,8 @@ export interface PriceTable {
   /** Exalted Orbs per Divine Orb. */
   exPerDiv?: number;
 }
+
+export type CurrencyUnit = "chaos" | "ex" | "div";
 
 export interface StashItem {
   name: string;

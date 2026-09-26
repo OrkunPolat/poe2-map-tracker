@@ -1,14 +1,39 @@
-import type { PriceTable, StashState, StashTab } from "./types";
-import { tabPrice } from "./tradeStash";
+import type { CurrencyUnit, PriceTable, Settings, StashState, StashTab } from "./types";
+import { TRADE_PRICE_MAX, TRADE_PRICE_MIN, tabPrice } from "./tradeStash";
 
 export const emptyStash = (): StashState => ({ tabs: [], history: [] });
 
-export function tabValueDiv(tab: StashTab, prices?: PriceTable): number {
-  return tab.items.reduce((s, it) => s + (it.qty ?? 0) * (prices?.divByName[it.name] ?? 0), 0);
+/** Divine value of one unit of a currency (undefined when poe.ninja has no price for it). */
+export function unitDiv(unit: CurrencyUnit, prices?: PriceTable): number | undefined {
+  if (unit === "div") return 1;
+  return prices?.divByName[unit === "ex" ? "Exalted Orb" : "Chaos Orb"];
 }
 
-export function stashValueDiv(stash: StashState, prices?: PriceTable): number {
-  return stash.tabs.reduce((s, t) => s + tabValueDiv(t, prices), 0);
+/** The stash filter as a Divine threshold per item; 0 means no filter. */
+export function minItemDiv(settings: Pick<Settings, "stashMinValue">, prices?: PriceTable): number {
+  const f = settings.stashMinValue;
+  if (!f || !(f.amount > 0)) return 0;
+  return f.amount * (unitDiv(f.unit, prices) ?? 0);
+}
+
+/** Items below the threshold count as if they were not in the stash. Unpriced items stay visible. */
+export function itemVisible(name: string, prices: PriceTable | undefined, minDiv: number): boolean {
+  if (!minDiv) return true;
+  const u = prices?.divByName[name];
+  return u == null || u >= minDiv;
+}
+
+export function filterStash(stash: StashState, prices: PriceTable | undefined, minDiv: number): StashState {
+  if (!minDiv) return stash;
+  return { ...stash, tabs: stash.tabs.map((t) => ({ ...t, items: t.items.filter((i) => itemVisible(i.name, prices, minDiv)) })) };
+}
+
+export function tabValueDiv(tab: StashTab, prices?: PriceTable, minDiv = 0): number {
+  return tab.items.reduce((s, it) => s + (itemVisible(it.name, prices, minDiv) ? (it.qty ?? 0) * (prices?.divByName[it.name] ?? 0) : 0), 0);
+}
+
+export function stashValueDiv(stash: StashState, prices?: PriceTable, minDiv = 0): number {
+  return stash.tabs.reduce((s, t) => s + tabValueDiv(t, prices, minDiv), 0);
 }
 
 /** A re-read of the same tab replaces it; counts the user typed in survive if the item is still there. */
@@ -31,7 +56,7 @@ export function replaceTradeTabs(stash: StashState, tabs: StashTab[], readPrices
     if (t.source !== "trade") return true;
     if (!readPrices) return false;
     const p = tabPrice(t.id.replace(/^trade:/, ""));
-    return p != null && !readPrices.has(p);
+    return p != null && p >= TRADE_PRICE_MIN && p <= TRADE_PRICE_MAX && !readPrices.has(p);
   });
   return { ...stash, tabs: [...keep, ...tabs] };
 }

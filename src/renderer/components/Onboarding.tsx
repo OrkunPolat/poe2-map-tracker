@@ -5,7 +5,7 @@ import { api } from "../api";
 
 /** Result list of the public-tab check, shared by onboarding and the Stash screen. */
 export function TabCheckList({ issues }: { issues: TabIssue[] }) {
-  const order: TabIssue["kind"][] = ["duplicatePrice", "wrongNote", "contentMismatch", "noName", "ok", "missing"];
+  const order: TabIssue["kind"][] = ["duplicatePrice", "wrongNote", "noName", "ok", "missing"];
   const sorted = [...issues].sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
   return (
     <ul className="check-list">
@@ -33,12 +33,6 @@ export function TabCheckList({ issues }: { issues: TabIssue[] }) {
             return (
               <li key={n} className="warn">
                 ⚠ Aynı fiyat ({i.price}) birden fazla sekmede: {i.tabs.map((t) => <code key={t}>{t}</code>)}. Her sekmeye farklı sayı ver.
-              </li>
-            );
-          case "contentMismatch":
-            return (
-              <li key={n} className="warn">
-                ⚠ <code>{i.tab}</code> adı {i.named} ama içindekiler çoğunlukla {i.content}. İsmi ya da sekmeyi kontrol et.
               </li>
             );
           case "wrongNote":
@@ -165,7 +159,7 @@ export function Onboarding({ snap, onClose }: { snap: Snapshot; onClose: () => v
               </tbody>
             </table>
             <p className="hint">
-              Hepsini yapmak zorunda değilsin, farm ettiklerin yeter. Kural: her sekmede farklı sayı (990-999) ve <b>divine</b>. İsim oyuna sığmazsa kısalt
+              Hepsini yapmak zorunda değilsin, farm ettiklerin yeter. Kural: her sekmede farklı sayı (990-998) ve <b>divine</b>. İsim oyuna sığmazsa kısalt
               (Exped gibi).
             </p>
           </section>

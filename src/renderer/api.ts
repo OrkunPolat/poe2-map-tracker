@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Api, Snapshot } from "../shared/ipc";
+import type { PriceTable } from "../shared/types";
 
 declare global {
   interface Window {
@@ -42,6 +43,15 @@ export function fmtValue(div: number, exPerDiv?: number): string {
     return ex < 1 ? "<1 ex" : `${Math.round(ex).toLocaleString("tr-TR")} ex`;
   }
   return `${fmtDiv(div)} div`;
+}
+
+/** Exalted Orbs per Chaos Orb (in PoE2 a Chaos is worth several Exalts), rounded for display. */
+export function exPerChaos(prices?: PriceTable): string | undefined {
+  const ex = prices?.divByName["Exalted Orb"];
+  const c = prices?.divByName["Chaos Orb"];
+  if (!ex || !c) return undefined;
+  const r = c / ex;
+  return r >= 10 ? String(Math.round(r)) : r.toFixed(1).replace(".", ",");
 }
 
 export function fmtEx(div: number, exPerDiv?: number): string {

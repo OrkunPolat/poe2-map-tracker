@@ -166,7 +166,7 @@ describe("waystone danger", () => {
 });
 
 describe("tab setup check", () => {
-  it("flags duplicates, unnamed tabs, wrong notes, content mismatches and missing tabs", async () => {
+  it("flags duplicates, unnamed tabs, wrong notes and missing tabs", async () => {
     const { checkTabs } = await import("../src/shared/tabCheck");
     const issues = checkTabs(
       [
@@ -179,11 +179,16 @@ describe("tab setup check", () => {
     );
     const kinds = issues.map((i) => i.kind);
     expect(issues.find((i) => i.kind === "ok" && i.tab.includes("Expedition"))).toBeTruthy();
-    expect(issues.find((i) => i.kind === "contentMismatch")).toMatchObject({ named: "Ritual", content: "Expedition" });
+    // A tab's contents are shown as read; its name is only a label, never an error.
+    expect(issues.find((i) => i.kind === "ok" && i.tab.includes("Ritual"))).toBeTruthy();
     expect(issues.find((i) => i.kind === "duplicatePrice")).toMatchObject({ price: 993 });
     expect(kinds).toContain("noName");
     expect(issues.find((i) => i.kind === "wrongNote")).toMatchObject({ tab: "~price 994 exalted Delirium" });
     expect(issues.filter((i) => i.kind === "missing").map((i) => (i as { suggested: string }).suggested)).toContain("~price 990 divine Currency");
+    // Gem tab (999) is no longer suggested nor flagged; tabs read later are not "missing".
+    expect(JSON.stringify(issues)).not.toContain("999");
+    const later = checkTabs([], [], new Set([998]));
+    expect(later.some((i) => i.kind === "missing" && i.suggested.includes("Rune"))).toBe(false);
   });
 });
 
@@ -208,9 +213,9 @@ describe("partial trade reads", () => {
     const { tabPrice } = await import("../src/shared/tradeStash");
     expect(tabPrice("~price 998 divine Rune")).toBe(998);
     const t = (name: string, n: number) => ({ id: `trade:${name}`, label: name, capturedAt: 0, screenshot: "", source: "trade" as const, items: [{ name: "x", qty: n }] });
-    const before = { history: [], tabs: [t("~price 991 divine Expedition", 1), t("~price 999 divine Gem", 179)] };
+    const before = { history: [], tabs: [t("~price 991 divine Expedition", 1), t("~price 998 divine Rune", 104)] };
     const after = replaceTradeTabs(before, [t("~price 991 divine Expedition", 5)], new Set([990, 991, 992]));
-    expect(after.tabs.map((x) => [x.label, x.items[0]!.qty])).toEqual([["~price 999 divine Gem", 179], ["~price 991 divine Expedition", 5]]);
+    expect(after.tabs.map((x) => [x.label, x.items[0]!.qty])).toEqual([["~price 998 divine Rune", 104], ["~price 991 divine Expedition", 5]]);
     expect(replaceTradeTabs(before, [t("~price 991 divine Expedition", 5)]).tabs).toHaveLength(1); // full read: gem tab gone = no longer public
   });
 });

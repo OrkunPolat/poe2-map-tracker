@@ -366,3 +366,11 @@ input.ov-val { width: 56px; flex: none; }
 
 .gfn-row { margin-top: 6px; }
 .gfn-row button { padding: 4px 6px; }
+
+/* Stash: cheap-item filter, 10 visible rows per tab, single-line names */
+.stash-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0; font-size: 13px; }
+.stash-filter input.qty { width: 72px; }
+.tab-rows { max-height: 342px; overflow-y: auto; margin-top: 8px; }
+.tab-rows .loot-table { margin-top: 0; }
+.loot-table.fixed { table-layout: fixed; }
+.loot-table td.name-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

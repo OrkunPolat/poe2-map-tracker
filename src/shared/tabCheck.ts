@@ -11,7 +11,6 @@ export const SUGGESTED_TABS: Array<{ price: number; name: string; category: stri
   { price: 996, name: "Essence", category: "Essences" },
   { price: 997, name: "Fragment", category: "Fragments" },
   { price: 998, name: "Rune", category: "Runes" },
-  { price: 999, name: "Gem", category: "LineageSupportGems" },
 ];
 
 export const suggestedName = (t: { price: number; name: string }) => `~price ${t.price} ${TRADE_PRICE_CURRENCY} ${t.name}`;
@@ -29,16 +28,15 @@ export type TabIssue =
   | { kind: "missing"; suggested: string }
   | { kind: "noName"; tab: string }
   | { kind: "duplicatePrice"; tabs: string[]; price: number }
-  | { kind: "contentMismatch"; tab: string; named: string; content: string }
   | { kind: "wrongNote"; tab: string; hint: string };
 
 const clean = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
 
 /**
  * Compares what the trade site shows for the account with the suggested setup.
- * `tracked` are tabs priced 990-999 divine; `others` are the account's other public tabs.
+ * `tracked` are tabs priced 990-998 divine; `others` are the account's other public tabs.
  */
-export function checkTabs(tracked: SeenTab[], others: SeenTab[]): TabIssue[] {
+export function checkTabs(tracked: SeenTab[], others: SeenTab[], notRead: Set<number> = new Set()): TabIssue[] {
   const issues: TabIssue[] = [];
   const byPrice = new Map<number, SeenTab[]>();
   for (const t of tracked) {
@@ -53,14 +51,14 @@ export function checkTabs(tracked: SeenTab[], others: SeenTab[]): TabIssue[] {
       issues.push({ kind: "noName", tab: t.stashName });
       continue;
     }
-    const expected = SUGGESTED_TABS.find((s) => clean(name).startsWith(clean(s.name).slice(0, 4)));
-    if (expected && t.category && t.category !== expected.category && t.items >= 3) {
-      issues.push({ kind: "contentMismatch", tab: t.stashName, named: expected.name, content: t.category });
-    } else issues.push({ kind: "ok", tab: t.stashName, items: t.items });
+    // Whatever a tab holds is shown as read; its name is only a label.
+    issues.push({ kind: "ok", tab: t.stashName, items: t.items });
   }
 
-  // Public tabs that look meant for tracking but whose price note does not match 990-999 divine.
+  // Public tabs that look meant for tracking but whose price note does not match 990-998 divine.
   for (const t of others) {
+    // The old gem tab (999) is deliberately not tracked.
+    if (t.price?.currency === TRADE_PRICE_CURRENCY && t.price.amount === 999) continue;
     const name = tabDisplayName(t.stashName) ?? t.stashName;
     const looksMeant = SUGGESTED_TABS.some((s) => clean(name).includes(clean(s.name).slice(0, 4))) || (t.price && t.price.amount >= 90);
     if (!looksMeant) continue;
@@ -74,6 +72,7 @@ export function checkTabs(tracked: SeenTab[], others: SeenTab[]): TabIssue[] {
   }
 
   for (const s of SUGGESTED_TABS) {
+    if (notRead.has(s.price)) continue; // read later in the background, not missing
     const found = tracked.some((t) => {
       const n = tabDisplayName(t.stashName);
       return (n && clean(n).startsWith(clean(s.name).slice(0, 4))) || t.category === s.category;

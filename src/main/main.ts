@@ -16,13 +16,13 @@ import { Store } from "./store";
 import { checkForUpdate, installUpdate } from "./updater";
 import { scanStashTab, shutdownStash } from "./stashScan";
 import { otherPublicTabs, syncTradeTabs } from "./tradeSync";
-import { tabPrice } from "../shared/tradeStash";
+import { DEFAULT_SLOW_PRICES, TRADE_PRICE_MAX, TRADE_PRICE_MIN, tabPrice } from "../shared/tradeStash";
 import { gfnTablets } from "../shared/gfn";
 import { checkTabs } from "../shared/tabCheck";
 import bundledWaystoneMods from "../shared/data/waystoneMods.json";
 import { parseWaystoneMods } from "../shared/waystoneModsParse.mjs";
 import type { WaystoneModFamily } from "../shared/waystoneDanger";
-import { emptyStash, replaceTradeTabs, setItemQty, stashValueDiv, upsertTab } from "../shared/stash";
+import { emptyStash, minItemDiv, replaceTradeTabs, setItemQty, stashValueDiv, upsertTab } from "../shared/stash";
 import { diffQty, stashLootTotals, stashLootWarnings, stashQty, toStashLoot, type Qty } from "../shared/stashDiff";
 import type { PriceTable } from "../shared/types";
 
@@ -230,11 +230,35 @@ async function readStashTab() {
 /** Reads the public tabs once; concurrent callers share the same request. Returns whether it worked. */
 let syncing: Promise<boolean> | undefined;
 function syncTradeOnce(fullCheck = false, auto = false): Promise<boolean> {
-  syncing ??= doSyncTrade(fullCheck, auto).finally(() => (syncing = undefined));
+  syncing ??= doSyncTrade(fullCheck, auto ? "auto" : "fast").finally(() => (syncing = undefined));
   return syncing;
 }
 
-async function doSyncTrade(fullCheck: boolean, auto: boolean): Promise<boolean> {
+/** Big tabs (by price) that are read after the rest: default Rune (998), plus what the user set. */
+const slowPrices = () => new Set(store.data.settings.autoSkipPrices ?? DEFAULT_SLOW_PRICES);
+
+/**
+ * After a manual read showed the small tabs, read the big ones in the background and merge them.
+ * Runs once the first read is done, so both never compete for the trade site's request budget.
+ */
+let slowReadQueued = false;
+function queueSlowRead() {
+  if (slowReadQueued || slowPrices().size === 0) return;
+  slowReadQueued = true;
+  void (async () => {
+    await syncing?.catch(() => undefined);
+    syncing ??= doSyncTrade(false, "slow").finally(() => (syncing = undefined));
+    await syncing;
+    slowReadQueued = false;
+  })();
+}
+
+/**
+ * fast: everything except the slow tabs (manual refresh, first part); slow: only the slow tabs,
+ * in the background; auto: per-map read, never the slow tabs.
+ */
+async function doSyncTrade(fullCheck: boolean, mode: "fast" | "slow" | "auto"): Promise<boolean> {
+  const auto = mode === "auto";
   const account = store.data.settings.tradeAccount.trim();
   if (!account) return false;
   let ok = false;
@@ -244,7 +268,10 @@ async function doSyncTrade(fullCheck: boolean, auto: boolean): Promise<boolean> 
     push();
     try {
       const { settings } = store.data;
-      const skipPrices = auto ? new Set(settings.autoSkipPrices ?? []) : undefined;
+      const slow = slowPrices();
+      const allPrices = Array.from({ length: TRADE_PRICE_MAX - TRADE_PRICE_MIN + 1 }, (_, i) => TRADE_PRICE_MIN + i);
+      const skipPrices = mode === "slow" ? new Set(allPrices.filter((p) => !slow.has(p))) : slow;
+      if (mode === "slow") status.stashMessage = { at: Date.now(), ok: true, text: `Büyük sekmeler arkada okunuyor (${[...slow].join(", ")})…` };
       const { tabs, truncated, seen, readPrices } = await syncTradeTabs(
         settings.league,
         account,
@@ -257,13 +284,10 @@ async function doSyncTrade(fullCheck: boolean, auto: boolean): Promise<boolean> 
         },
         { skipPrices },
       );
-      // First full read: leave big, slow-changing tabs (gems, runes, 80+ items) out of per-map reads.
-      if (!auto && !settings.autoSkipConfigured && tabs.length) {
-        settings.autoSkipPrices = tabs
-          .filter((t) => /gem|rune/i.test(t.label) || t.items.length > 80)
-          .map((t) => tabPrice(t.id.replace(/^trade:/, "")))
-          .filter((p): p is number => p != null);
-        settings.autoSkipConfigured = true;
+      // Tabs that turn out big (80+ items) join the slow set, unless the user chose per tab.
+      if (!settings.autoSkipConfigured) {
+        const big = tabs.filter((t) => t.items.length > 80).map((t) => tabPrice(t.id.replace(/^trade:/, ""))).filter((p): p is number => p != null);
+        if (big.some((p) => !slow.has(p))) settings.autoSkipPrices = [...new Set([...slow, ...big])];
       }
       let others: typeof seen = [];
       if (fullCheck) {
@@ -274,8 +298,9 @@ async function doSyncTrade(fullCheck: boolean, auto: boolean): Promise<boolean> 
           push();
         });
       }
-      status.tabCheck = { at: Date.now(), full: fullCheck, issues: checkTabs(seen, others) };
+      if (mode !== "slow") status.tabCheck = { at: Date.now(), full: fullCheck, issues: checkTabs(seen, others, slow) };
       store.data.stash = replaceTradeTabs(store.data.stash ?? emptyStash(), tabs, readPrices);
+      if (mode === "fast") queueSlowRead();
       const items = tabs.reduce((s, t) => s + t.items.length, 0);
       status.stashMessage = {
         at: Date.now(),
@@ -284,7 +309,7 @@ async function doSyncTrade(fullCheck: boolean, auto: boolean): Promise<boolean> 
           ? `Trade: ${tabs.length} public sekme, ${items} item okundu.${truncated ? " Bir sekmede 100'den fazla item var, fazlası okunamadı; o sekmeyi ikiye böl." : ""}`
           : "Trade sitesinde bu hesapta ~price 990-999 divine fiyatlı public sekme bulunamadı. Kurulum adımlarına bak; trade sitesi değişiklikleri birkaç dakika gecikmeyle görür.",
       };
-      ok = tabs.length > 0;
+      ok = tabs.length > 0 || mode === "slow";
       status.stashHealth = ok
         ? { lastOkAt: Date.now() }
         : { ...status.stashHealth, lastError: "Public sekme bulunamadı (hesap adı / sekme adları?)", lastErrorAt: Date.now() };
@@ -303,10 +328,10 @@ async function refreshStash(fullCheck = false) {
   await refreshPrices();
   const ok = await syncTradeOnce(fullCheck);
   // A manual refresh in the hideout also closes the map that was just finished.
-  if (ok) closeLastRun(stashQty(store.data.stash?.tabs ?? []));
+  if (ok) closeLastRun(stashQty(store.data.stash?.tabs ?? [], slowPrices()));
   const stash = store.data.stash ?? emptyStash();
   if (stash.tabs.length) {
-    store.data.stash = { ...stash, history: [...stash.history, { ts: Date.now(), div: stashValueDiv(stash, effPrices()) }].slice(-500) };
+    store.data.stash = { ...stash, history: [...stash.history, { ts: Date.now(), div: stashValueDiv(stash, effPrices(), minItemDiv(store.data.settings, effPrices())) }].slice(-500) };
     store.save();
   }
   push();
@@ -353,7 +378,7 @@ function autoStashOnEvent(prev: TrackerState, ev: TrackerEvent) {
 
 async function readStashQty(): Promise<Qty | undefined> {
   await refreshPrices();
-  return (await syncTradeOnce(false, true)) ? stashQty(store.data.stash?.tabs ?? []) : undefined;
+  return (await syncTradeOnce(false, true)) ? stashQty(store.data.stash?.tabs ?? [], slowPrices()) : undefined;
 }
 
 async function takeBefore(runId: string) {
@@ -736,6 +761,7 @@ function createWindow() {
   if (smokeOut) {
     win.webContents.once("did-finish-load", () => {
       setTimeout(async () => {
+        if (process.env.POE2T_SMOKE_JS) console.log("[smoke-js]", JSON.stringify(await win!.webContents.executeJavaScript(process.env.POE2T_SMOKE_JS)));
         const img = await win!.webContents.capturePage();
         writeFileSync(smokeOut, img.toPNG());
         if (overlay) {
@@ -750,6 +776,8 @@ function createWindow() {
 
 app.whenReady().then(() => {
   store = new Store(app.getPath("userData"));
+  // Trade tabs outside the tracked price range (the old 999 gem tab) are dropped right away.
+  if (store.data.stash) store.data.stash = replaceTradeTabs(store.data.stash, [], new Set());
   protocol.handle("shot", (req) => {
     // shot://img/<file> -> screenshots/<file>, refusing anything that escapes the folder.
     const name = decodeURIComponent(new URL(req.url).pathname.replace(/^\//, ""));

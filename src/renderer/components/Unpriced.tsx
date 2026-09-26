@@ -41,6 +41,7 @@ export function UnpricedCard({ snap }: { snap: Snapshot }) {
         <h3>Fiyatı olmayan item'lar · {names.length}</h3>
         <span className="muted small">poe.ninja'da yok; bir kez değer gir, stash ve map kazancında kullanılır</span>
       </div>
+      <div className="tab-rows">
       <table className="loot-table">
         <tbody>
           {names.map((n) => (
@@ -54,6 +55,7 @@ export function UnpricedCard({ snap }: { snap: Snapshot }) {
           ))}
         </tbody>
       </table>
+      </div>
     </section>
   );
 }

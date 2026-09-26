@@ -1,12 +1,19 @@
 import type { PriceTable, Run, StashTab } from "./types";
+import { tabPrice } from "./tradeStash";
 
 export type Qty = Record<string, number>;
 
-/** Item counts across the tabs read from the trade site (what the automatic diff compares). */
-export function stashQty(tabs: StashTab[]): Qty {
+/**
+ * Item counts across the tabs read from the trade site (what the automatic diff compares).
+ * `excludePrices` leaves out tabs that are not re-read every map, so their stale contents
+ * cannot show up as one map's loot when they finally are.
+ */
+export function stashQty(tabs: StashTab[], excludePrices: Set<number> = new Set()): Qty {
   const q: Qty = {};
   for (const t of tabs) {
     if (t.source !== "trade") continue;
+    const p = tabPrice(t.id.replace(/^trade:/, ""));
+    if (p != null && excludePrices.has(p)) continue;
     for (const it of t.items) if (it.qty) q[it.name] = (q[it.name] ?? 0) + it.qty;
   }
   return q;

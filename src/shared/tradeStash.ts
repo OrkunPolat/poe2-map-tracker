@@ -6,7 +6,10 @@
  */
 
 export const TRADE_PRICE_MIN = 990;
-export const TRADE_PRICE_MAX = 999;
+/** 999 was the gem tab; gems are not tracked, so that price is never searched. */
+export const TRADE_PRICE_MAX = 998;
+/** Tab prices read after the rest, in the background (big tabs that cost most of the request budget). */
+export const DEFAULT_SLOW_PRICES = [998];
 export const TRADE_PRICE_CURRENCY = "divine";
 
 export interface TradeListing {

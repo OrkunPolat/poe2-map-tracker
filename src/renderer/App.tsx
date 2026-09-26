@@ -4,7 +4,7 @@ import { currentSession, groupSessions, sessionNetPerHour } from "../shared/sess
 import { formatDuration, runCostDiv, runNetDiv, runValueDiv, tabletSetupKey } from "../shared/stats";
 import { liveMapTime } from "../shared/tracker";
 import type { Run } from "../shared/types";
-import { api, fmtDiv, fmtEx, fmtValue, useNow, useSnapshot } from "./api";
+import { api, exPerChaos, fmtDiv, fmtEx, fmtValue, useNow, useSnapshot } from "./api";
 import { dangerLines } from "./danger";
 import { ALL_LEAGUES, inLeague, leaguesOf } from "./league";
 import { counted } from "../shared/stats";
@@ -92,7 +92,7 @@ export function App() {
             <span className={`dot ${settings.playMode === "gfn" || status.logFound ? "ok" : "bad"}`} />
             {settings.playMode === "gfn" ? `GeForce Now · ${LOCATION_LABEL[state.location.kind]}` : status.logFound ? LOCATION_LABEL[state.location.kind] : "Log bulunamadı"}
           </div>
-          <div className="side-status muted">{prices ? `${prices.league} · 1 div = ${Math.round(prices.exPerDiv ?? 0)} ex` : "Fiyat yok"}</div>
+          <div className="side-status muted">{prices ? `${prices.league} · 1 div = ${Math.round(prices.exPerDiv ?? 0)} ex${exPerChaos(prices) ? ` · 1 c = ${exPerChaos(prices)} ex` : ""}` : "Fiyat yok"}</div>
           <div className="side-status muted">v{status.version}</div>
         </div>
       </aside>

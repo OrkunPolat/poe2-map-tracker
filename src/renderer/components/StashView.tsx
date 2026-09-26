@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { stashValueDiv, tabValueDiv } from "../../shared/stash";
+import { filterStash, itemVisible, minItemDiv, stashValueDiv, tabValueDiv } from "../../shared/stash";
 import type { Snapshot } from "../../shared/ipc";
-import type { PriceTable, StashTab } from "../../shared/types";
-import { api, fmtDiv, fmtEx, fmtValue } from "../api";
+import type { CurrencyUnit, PriceTable, Settings, StashTab } from "../../shared/types";
+import { DEFAULT_SLOW_PRICES } from "../../shared/tradeStash";
+import { api, exPerChaos, fmtDiv, fmtEx, fmtValue } from "../api";
 import { TabCheckList } from "./Onboarding";
 import { Trend } from "./Trend";
 import { sellHints } from "../../shared/trends";
@@ -24,7 +25,8 @@ const ago = (ts: number, now: number) => {
 
 export function StashView({ snap, onSetup }: { snap: Snapshot; onSetup: () => void }) {
   const { stash, prices, status, settings, now } = snap;
-  const total = stashValueDiv(stash, prices);
+  const minDiv = minItemDiv(settings, prices);
+  const total = stashValueDiv(stash, prices, minDiv);
   const last = stash.history[stash.history.length - 1];
   const prev = stash.history[stash.history.length - 2];
   // With trade sync the placeholders are noise: the user decides which tabs are public.
@@ -52,6 +54,11 @@ export function StashView({ snap, onSetup }: { snap: Snapshot; onSetup: () => vo
           <small>{fmtEx(total, prices?.exPerDiv)}</small>
         </div>
         <div className="stat">
+          <span>Kur</span>
+          <b>{prices?.exPerDiv ? `1 div = ${Math.round(prices.exPerDiv)} ex` : "–"}</b>
+          <small>{exPerChaos(prices) ? `1 chaos = ${exPerChaos(prices)} ex` : "chaos fiyatı yok"}</small>
+        </div>
+        <div className="stat">
           <span>Son yenilemeye göre</span>
           <b className={prev && last && last.div < prev.div ? "neg" : "pos"}>
             {prev && last ? `${last.div >= prev.div ? "+" : ""}${fmtDiv(last.div - prev.div)} div` : "–"}
@@ -61,9 +68,11 @@ export function StashView({ snap, onSetup }: { snap: Snapshot; onSetup: () => vo
         <div className="stat">
           <span>Sekme</span>
           <b>{stash.tabs.length}</b>
-          <small>{stash.tabs.reduce((s, t) => s + t.items.length, 0)} farklı item</small>
+          <small>{stash.tabs.reduce((s, t) => s + t.items.filter((i) => itemVisible(i.name, prices, minDiv)).length, 0)} farklı item</small>
         </div>
       </div>
+
+      <StashFilter settings={settings} prices={prices} hidden={stash.tabs.reduce((s, t) => s + t.items.filter((i) => !itemVisible(i.name, prices, minDiv)).length, 0)} />
 
       {status.stashMessage && (
         <p className={`status-line ${status.stashMessage.ok ? "" : "warn"}`}>
@@ -73,7 +82,7 @@ export function StashView({ snap, onSetup }: { snap: Snapshot; onSetup: () => vo
 
       <UnpricedCard snap={snap} />
 
-      <SellHints snap={snap} />
+      <SellHints snap={snap} minDiv={minDiv} />
 
       {status.tabCheck && status.tabCheck.issues.some((i) => i.kind !== "ok" && i.kind !== "missing") && (
         <section className="card">
@@ -86,9 +95,9 @@ export function StashView({ snap, onSetup }: { snap: Snapshot; onSetup: () => vo
 
       <div className="stash-grid">
         {[...stash.tabs]
-          .sort((a, b) => tabValueDiv(b, prices) - tabValueDiv(a, prices))
+          .sort((a, b) => tabValueDiv(b, prices, minDiv) - tabValueDiv(a, prices, minDiv))
           .map((t) => (
-            <TabCard key={t.id} tab={t} prices={prices} now={now} autoSkip={settings.autoSkipPrices ?? []} />
+            <TabCard key={t.id} tab={t} prices={prices} now={now} minDiv={minDiv} autoSkip={settings.autoSkipPrices ?? DEFAULT_SLOW_PRICES} />
           ))}
         {missing.map((c) => (
           <section key={c} className="card tab-card empty-tab">
@@ -101,9 +110,10 @@ export function StashView({ snap, onSetup }: { snap: Snapshot; onSetup: () => vo
   );
 }
 
-function TabCard({ tab, prices, now, autoSkip }: { tab: StashTab; prices?: PriceTable; now: number; autoSkip: number[] }) {
-  const value = tabValueDiv(tab, prices);
-  const rows = [...tab.items].sort(
+function TabCard({ tab, prices, now, minDiv, autoSkip }: { tab: StashTab; prices?: PriceTable; now: number; minDiv: number; autoSkip: number[] }) {
+  const value = tabValueDiv(tab, prices, minDiv);
+  const shown = tab.items.filter((i) => itemVisible(i.name, prices, minDiv));
+  const rows = [...shown].sort(
     (a, b) => (b.qty ?? 0) * (prices?.divByName[b.name] ?? 0) - (a.qty ?? 0) * (prices?.divByName[a.name] ?? 0),
   );
   const unread = tab.items.filter((i) => i.qty == null).length;
@@ -117,7 +127,8 @@ function TabCard({ tab, prices, now, autoSkip }: { tab: StashTab; prices?: Price
         <b className="gold">{fmtDiv(value)} div</b>
       </div>
       <p className="muted small">
-        {ago(tab.capturedAt, now)} · {tab.items.length} item
+        {ago(tab.capturedAt, now)} · {shown.length} item
+        {shown.length < tab.items.length && <span> ({tab.items.length - shown.length} gizli)</span>}
         {unread > 0 && <span className="warn"> · {unread} sayı eksik, elle gir</span>}
         {tab.screenshot && (
           <>
@@ -128,13 +139,20 @@ function TabCard({ tab, prices, now, autoSkip }: { tab: StashTab; prices?: Price
           </>
         )}
       </p>
-      <table className="loot-table">
+      <div className="tab-rows">
+      <table className="loot-table fixed">
+        <colgroup>
+          <col />
+          <col style={{ width: 48 }} />
+          <col style={{ width: 132 }} />
+          <col style={{ width: 84 }} />
+        </colgroup>
         <tbody>
           {rows.map((it) => {
             const unit = prices?.divByName[it.name];
             return (
               <tr key={it.name} className={it.qty == null ? "unread" : ""}>
-                <td>{it.name}</td>
+                <td className="name-cell" title={it.name}>{it.name}</td>
                 <td>
                   {trade ? (
                     <span className="qty-text">{it.qty ?? "?"}</span>
@@ -162,6 +180,7 @@ function TabCard({ tab, prices, now, autoSkip }: { tab: StashTab; prices?: Price
           })}
         </tbody>
       </table>
+      </div>
       {trade && <AutoReadToggle tab={tab} autoSkip={autoSkip} />}
       <button className="danger" onClick={() => confirm(`${tab.label} sekmesi silinsin mi?`) && void api().stashDeleteTab(tab.id)}>
         Sekmeyi sil
@@ -183,7 +202,7 @@ export function TradeSetup({ account }: { account: string }) {
         </li>
         <li>
           Sekmenin adını fiyat + istediğin isim yap: <code>~price 991 divine Expedition</code>, <code>~price 992 divine Ritual</code>,{" "}
-          <code>~price 993 divine Abyss</code>… Her sekmeye farklı sayı ver (990-999 arası). Fahiş fiyat item'ların sadece trade sitesinde görünmesini
+          <code>~price 993 divine Abyss</code>… Her sekmeye farklı sayı ver (990-998 arası). Fahiş fiyat item'ların sadece trade sitesinde görünmesini
           sağlar, kimse almaz; sondaki isim uygulamada sekme adı olarak görünür.
         </li>
         <li>Hesap adını <b>İsim#1234</b> şeklinde gir (pathofexile.com profilindeki tam ad) ve <b>⟳ Yenile</b>'ye bas.</li>
@@ -196,7 +215,7 @@ export function TradeSetup({ account }: { account: string }) {
       </div>
       {!valid && <p className="warn">Ad #1234 gibi 4 haneli ekle bitmeli.</p>}
       <p className="hint">
-        Trade sitesi değişiklikleri birkaç dakika gecikmeyle görür. Gem, unique gibi her item okunur (100 item/sekme sınırı). Giriş yapılmaz, şifre ya da POESESSID
+        Trade sitesi değişiklikleri birkaç dakika gecikmeyle görür. Sekmedeki her item okunur. Büyük sekmeler (100+ item, ör. Rune) önce küçükler okunduktan sonra arka planda okunur. Giriş yapılmaz, şifre ya da POESESSID
         istenmez; sadece herkese açık trade verisi okunur ve trade sitesinin istek sınırlarına uyulur.
       </p>
     </section>
@@ -204,8 +223,8 @@ export function TradeSetup({ account }: { account: string }) {
 }
 
 /** Exiled Tools-style: what in the stash is losing or gaining value this week. */
-function SellHints({ snap }: { snap: Snapshot }) {
-  const hints = sellHints(snap.stash, snap.prices);
+function SellHints({ snap, minDiv }: { snap: Snapshot; minDiv: number }) {
+  const hints = sellHints(filterStash(snap.stash, snap.prices, minDiv), snap.prices);
   if (hints.length === 0) return null;
   const sell = hints.filter((h) => h.advice === "sell").slice(0, 6);
   const hold = hints.filter((h) => h.advice === "hold").slice(0, 6);
@@ -271,5 +290,51 @@ function AutoReadToggle({ tab, autoSkip }: { tab: StashTab; autoSkip: number[] }
       <span className="switch" />
       <span>Her map'te oku {tab.items.length > 80 && <span className="muted">({tab.items.length} item, yavaş)</span>}</span>
     </label>
+  );
+}
+
+const UNIT_LABEL: Record<CurrencyUnit, string> = { chaos: "chaos", ex: "ex", div: "div" };
+
+/** Hides cheap items everywhere on this page and leaves them out of the stash value. Kept in local settings. */
+function StashFilter({ settings, prices, hidden }: { settings: Settings; prices?: PriceTable; hidden: number }) {
+  const f = settings.stashMinValue ?? { amount: 0, unit: "chaos" as CurrencyUnit };
+  const [amount, setAmount] = useState(f.amount ? String(f.amount) : "");
+  const save = (next: { amount: number; unit: CurrencyUnit }) => void api().setSettings({ stashMinValue: next });
+  const missingPrice = f.amount > 0 && f.unit !== "div" && minItemDiv(settings, prices) === 0;
+  return (
+    <div className="stash-filter">
+      <span className="muted">Birim fiyatı</span>
+      <input
+        className="qty"
+        type="number"
+        min={0}
+        step="any"
+        placeholder="0"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        onBlur={() => save({ amount: Math.max(0, Number(amount) || 0), unit: f.unit })}
+        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+      />
+      <select value={f.unit} onChange={(e) => save({ amount: Math.max(0, Number(amount) || 0), unit: e.target.value as CurrencyUnit })}>
+        {(Object.keys(UNIT_LABEL) as CurrencyUnit[]).map((u) => (
+          <option key={u} value={u}>
+            {UNIT_LABEL[u]}
+          </option>
+        ))}
+      </select>
+      <span className="muted">altındakileri gizle, toplama katma</span>
+      {hidden > 0 && <span className="pill">{hidden} item gizli</span>}
+      {missingPrice && <span className="warn">{UNIT_LABEL[f.unit]} fiyatı yok, filtre çalışmıyor</span>}
+      {f.amount > 0 && (
+        <button
+          onClick={() => {
+            setAmount("");
+            save({ amount: 0, unit: f.unit });
+          }}
+        >
+          Kaldır
+        </button>
+      )}
+    </div>
   );
 }
