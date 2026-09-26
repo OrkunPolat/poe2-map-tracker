@@ -13,7 +13,7 @@
   <a href="../../releases/latest"><b>⬇️ İndir (portable .exe)</b></a> ·
   <a href="#-nasıl-çalışır">Nasıl çalışır</a> ·
   <a href="#%EF%B8%8F-kısayollar">Kısayollar</a> ·
-  <a href="#-istatistik">İstatistik</a>
+  <a href="#-i̇statistik">İstatistik</a>
 </p>
 
 ---
