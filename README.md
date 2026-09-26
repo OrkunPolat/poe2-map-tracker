@@ -49,6 +49,23 @@ Her map'e **hangi waystone ve tabletlerle** girdiğini, **süreyi**, **ölümler
 | 🖥️ **Overlay** | Oyun üstünde her zaman görünen panel, tıklayınca oyundan odağı çalmaz |
 | 📈 **Canlı fiyat** | poe.ninja PoE2 fiyatları, Divine bazında, 30 dk'da bir |
 
+## 💻 Windows, Mac ve GeForce Now
+
+| | İndir | Map algılama |
+| :-- | :-- | :-- |
+| **Windows** (oyun bu PC'de) | `PoE2-Map-Tracker-x.y.z-portable.exe` | Otomatik, `Client.txt`'ten |
+| **Mac** (GeForce Now) | `PoE2-Map-Tracker-x.y.z-mac.dmg` | Kısayolla: <kbd>⌘</kbd>+<kbd>⇧</kbd>+<kbd>N</kbd> yeni map, <kbd>⌘</kbd>+<kbd>⇧</kbd>+<kbd>E</kbd> hideout |
+| **Windows** (GeForce Now) | portable exe, Ayarlar → Genel → *GeForce Now* | Kısayolla: <kbd>Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>N</kbd> / <kbd>Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>E</kbd> |
+
+**GeForce Now'da** oyun bulutta çalıştığı için log dosyası ve <kbd>Ctrl</kbd>+<kbd>C</kbd> bilgisayarına gelmez. Bu yüzden map'e girerken kısayola (ya da overlay'deki **▶ Yeni map**'e) basarsın; farm'ı ve tablet sayısını bir kere seçersin. Kazanç yine stash farkından otomatik hesaplanır, bunun için hesap adın ve public sekmelerin hazır olmalı.
+
+> [!NOTE]
+> **Mac'te ilk açılış:** Uygulama Apple'a kayıtlı bir geliştirici imzası taşımadığı için macOS ilk açılışta engeller. `.dmg`'den uygulamayı *Applications*'a sürükle, açmayı dene, sonra **Sistem Ayarları → Gizlilik ve Güvenlik → "Yine de Aç"**. Ya da Terminal'de bir kez:
+> ```bash
+> xattr -dr com.apple.quarantine "/Applications/PoE2 Map Tracker.app"
+> ```
+> Mac'te güncelleme butonu indirme sayfasını açar; yeni `.dmg`'yi indirip üzerine kopyalarsın.
+
 ## 🚀 Nasıl çalışır
 
 > [!TIP]

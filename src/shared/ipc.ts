@@ -25,6 +25,7 @@ export interface Status {
   hotkeyRegistered: boolean;
   overlayHotkeyRegistered: boolean;
   stashHotkeyRegistered: boolean;
+  gfnHotkeysRegistered?: boolean;
   /** Set while a stash tab is being read. */
   stashBusy?: boolean;
   stashMessage?: { at: number; ok: boolean; text: string };
@@ -90,6 +91,9 @@ export interface Api {
   stashDeleteTab(tabId: string): Promise<void>;
   updateWaystoneMods(): Promise<string>;
   checkTabSetup(): Promise<void>;
+  /** GeForce Now mode: a map starts / the player is back in the hideout. */
+  gfnStart(): Promise<void>;
+  gfnEnd(): Promise<void>;
   /** Give an unpriced item a value in Divine; undefined removes it. */
   setCustomPrice(name: string, div: number | undefined): Promise<void>;
   /** Screenshot of a region of the main window (CSS pixels) to a PNG file or the clipboard. */

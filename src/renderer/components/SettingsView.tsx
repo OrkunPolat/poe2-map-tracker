@@ -81,6 +81,17 @@ function General({ snap }: { snap: Snapshot }) {
   const [charName, setCharName] = useState(settings.characterName);
   return (
     <section className="card">
+      <Field label="Oyun nerede çalışıyor" hint="GeForce Now'da Client.txt ve Ctrl+C yok; map'leri kısayolla başlatırsın, kazanç yine stash farkından gelir.">
+        <div className="seg">
+          <button className={settings.playMode === "local" ? "on" : ""} onClick={() => set({ playMode: "local" })}>
+            Bu bilgisayarda
+          </button>
+          <button className={settings.playMode === "gfn" ? "on" : ""} onClick={() => set({ playMode: "gfn" })}>
+            GeForce Now / bulut
+          </button>
+        </div>
+      </Field>
+      {settings.playMode === "local" && (
       <Field label="Client.txt" hint="Genelde: Steam → steamapps\common\Path of Exile 2\logs\Client.txt">
         <p className={status.logFound ? "ok" : "warn"}>
           {status.logFound ? "Bağlı · " : "Bulunamadı · "}
@@ -91,6 +102,7 @@ function General({ snap }: { snap: Snapshot }) {
           {settings.logPath && <button onClick={() => set({ logPath: "" })}>Otomatik tespit</button>}
         </div>
       </Field>
+      )}
       <Field label="Lig (fiyatlar)" hint={prices ? `poe.ninja · ${Object.keys(prices.divByName).length} item · ${new Date(prices.fetchedAt).toLocaleTimeString("tr-TR")}` : status.priceError}>
         <div className="row">
           <select value={settings.league} onChange={(e) => set({ league: e.target.value })}>
@@ -180,6 +192,7 @@ function OverlaySettings({ snap }: { snap: Snapshot }) {
           <button onClick={() => set({ overlayPos: undefined })}>Sağ üste al</button>
         </div>
       </Field>
+      {settings.playMode === "gfn" && <GfnHotkeys snap={snap} />}
       <Field label="Overlay aç/kapa">
         <div className="row">
           <input value={ovKey} onChange={(e) => setOvKey(e.target.value)} />
@@ -291,5 +304,22 @@ function DebugView({ snap }: { snap: Snapshot }) {
         <pre>{debug.lastClipboard?.text ?? "Oyunda bir item'ın üstünde Ctrl+C yap."}</pre>
       </Field>
     </section>
+  );
+}
+
+function GfnHotkeys({ snap }: { snap: Snapshot }) {
+  const { settings, status } = snap;
+  const set = useSet();
+  const [start, setStart] = useState(settings.gfnStartHotkey);
+  const [end, setEnd] = useState(settings.gfnEndHotkey);
+  return (
+    <Field label="GeForce Now kısayolları" hint="Yeni map / hideout'a dönüş. Mac'te CommandOrControl = ⌘.">
+      <div className="row">
+        <input value={start} onChange={(e) => setStart(e.target.value)} />
+        <input value={end} onChange={(e) => setEnd(e.target.value)} />
+        <button onClick={() => set({ gfnStartHotkey: start, gfnEndHotkey: end })}>Kaydet</button>
+        <HotkeyState ok={!!status.gfnHotkeysRegistered} />
+      </div>
+    </Field>
   );
 }

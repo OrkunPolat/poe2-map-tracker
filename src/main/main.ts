@@ -16,6 +16,7 @@ import { Store } from "./store";
 import { checkForUpdate, installUpdate } from "./updater";
 import { scanStashTab, shutdownStash } from "./stashScan";
 import { otherPublicTabs, syncTradeTabs } from "./tradeSync";
+import { gfnTablets } from "../shared/gfn";
 import { checkTabs } from "../shared/tabCheck";
 import bundledWaystoneMods from "../shared/data/waystoneMods.json";
 import { parseWaystoneMods } from "../shared/waystoneModsParse.mjs";
@@ -438,9 +439,28 @@ function tryRegister(accelerator: string, fn: () => void): boolean {
   }
 }
 
+// ---------- GeForce Now mode ----------
+// The game runs in the cloud, so there is no Client.txt: a hotkey stands in for the log's
+// "map generated" / "hideout" lines and everything downstream (timer, stash diff) is unchanged.
+function gfnStart() {
+  const s = store.data.settings;
+  store.data.state = { ...store.data.state, pending: { ...store.data.state.pending, tablets: gfnTablets(s.gfnFarm, s.gfnTabletCount) } };
+  const ts = Date.now();
+  apply({ type: "areaGenerated", ts, level: 0, areaId: "MapGFN", seed: String(ts) });
+  apply({ type: "areaEntered", ts, name: s.gfnMapName.trim() || `${s.gfnFarm} map` });
+}
+
+function gfnEnd() {
+  if (store.data.state.location.kind !== "map") return;
+  apply({ type: "areaGenerated", ts: Date.now(), level: 0, areaId: "HideoutGFN", seed: "0" });
+}
+
 function registerHotkeys() {
   globalShortcut.unregisterAll();
   const { settings } = store.data;
+  if (settings.playMode === "gfn") {
+    status.gfnHotkeysRegistered = tryRegister(settings.gfnStartHotkey, gfnStart) && tryRegister(settings.gfnEndHotkey, gfnEnd);
+  } else status.gfnHotkeysRegistered = undefined;
   status.hotkeyRegistered = tryRegister(settings.screenshotHotkey, () => void takeScreenshot().catch(console.error));
   status.stashHotkeyRegistered = tryRegister(settings.stashHotkey, () => void readStashTab());
   status.overlayHotkeyRegistered = tryRegister(settings.overlayHotkey, () => {
@@ -542,7 +562,11 @@ function setupIpc() {
     store.data.settings = { ...prev, ...patch };
     store.save();
     if (patch.logPath !== undefined && patch.logPath !== prev.logPath) startLog();
-    if (patch.screenshotHotkey !== undefined || patch.overlayHotkey !== undefined || patch.stashHotkey !== undefined) registerHotkeys();
+    if (
+      patch.screenshotHotkey !== undefined || patch.overlayHotkey !== undefined || patch.stashHotkey !== undefined ||
+      patch.playMode !== undefined || patch.gfnStartHotkey !== undefined || patch.gfnEndHotkey !== undefined
+    )
+      registerHotkeys();
     if (patch.overlayEnabled !== undefined || patch.overlayOpacity !== undefined) syncOverlay();
     if ("overlayPos" in patch && !patch.overlayPos) overlay?.setPosition(defaultOverlayPos().x, defaultOverlayPos().y);
     if (patch.alwaysOnTop !== undefined) win?.setAlwaysOnTop(patch.alwaysOnTop, "screen-saver");
@@ -575,6 +599,8 @@ function setupIpc() {
   ipcMain.handle("update:check", () => checkUpdate());
   ipcMain.handle("stash:refresh", () => refreshStash());
   ipcMain.handle("stash:checkSetup", () => refreshStash(true));
+  ipcMain.handle("gfn:start", () => gfnStart());
+  ipcMain.handle("gfn:end", () => gfnEnd());
   ipcMain.handle("price:custom", (_, name: string, div: number | undefined) => {
     const custom = (store.data.customPrices ??= {});
     if (div == null || !Number.isFinite(div) || div < 0) delete custom[name];
@@ -709,6 +735,15 @@ app.whenReady().then(() => {
   setInterval(() => void refreshPrices(), PRICE_REFRESH_MS);
   void checkUpdate();
   if (process.env.POE2T_STASH_IMAGE) setTimeout(() => void readStashTab(), 3000);
+  // Test hook: simulate two GeForce Now maps (start/end presses) to exercise the hotkey path.
+  if (process.env.POE2T_GFN_TEST) {
+    console.log("[gfn] hotkeys registered:", status.gfnHotkeysRegistered);
+    const at = (sec: number, fn: () => void) => setTimeout(fn, sec * 1000);
+    at(3, gfnStart);
+    at(16, gfnEnd);
+    at(20, gfnStart);
+    at(33, gfnEnd);
+  }
   if (process.env.POE2T_TRADE_TEST)
     setTimeout(async () => {
       await refreshStash(process.env.POE2T_TRADE_TEST === "full");

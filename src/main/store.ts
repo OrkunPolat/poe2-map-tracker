@@ -42,6 +42,13 @@ export const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
   autoStash: true,
   autoStashDelaySec: 150,
+  // The Mac client of choice is GeForce Now; there is no local Client.txt to read there.
+  playMode: process.platform === "darwin" ? "gfn" : "local",
+  gfnFarm: "Expedition",
+  gfnTabletCount: 3,
+  gfnMapName: "",
+  gfnStartHotkey: "CommandOrControl+Shift+N",
+  gfnEndHotkey: "CommandOrControl+Shift+E",
 };
 
 export class Store {

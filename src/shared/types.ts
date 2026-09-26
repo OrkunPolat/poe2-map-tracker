@@ -177,6 +177,16 @@ export interface Settings {
   autoStash: boolean;
   /** Seconds after entering a map before the stash is read (trade site lags behind the game). */
   autoStashDelaySec: number;
+  /**
+   * "local": the game runs on this PC (Client.txt, Ctrl+C). "gfn": cloud streaming such as
+   * GeForce Now; maps are started and ended by hotkey, loot still comes from the stash.
+   */
+  playMode: "local" | "gfn";
+  gfnFarm: string;
+  gfnTabletCount: number;
+  gfnMapName: string;
+  gfnStartHotkey: string;
+  gfnEndHotkey: string;
 }
 
 export interface PriceTable {

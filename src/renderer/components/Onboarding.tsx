@@ -69,7 +69,7 @@ function CopyBtn({ text }: { text: string }) {
   );
 }
 
-const STEPS = ["Log", "Hesap", "Stash sekmeleri", "Kontrol", "Kısayollar"] as const;
+const STEPS = ["Oyun", "Hesap", "Stash sekmeleri", "Kontrol", "Kısayollar"] as const;
 
 /** First-run setup: every step can be skipped; reachable again from Settings. */
 export function Onboarding({ snap, onClose }: { snap: Snapshot; onClose: () => void }) {
@@ -94,14 +94,31 @@ export function Onboarding({ snap, onClose }: { snap: Snapshot; onClose: () => v
 
         {step === 0 && (
           <section>
-            <h2>Oyun log dosyası</h2>
-            <p>Map giriş-çıkışlarını, süreyi ve ölümleri oyunun <code>Client.txt</code> dosyasından okuyoruz.</p>
-            <p className={status.logFound ? "ok" : "warn"}>
-              {status.logFound ? "✓ Bulundu: " : "✗ Bulunamadı. "}
-              <code>{status.logPath ?? "—"}</code>
-            </p>
-            {!status.logFound && <button onClick={() => void api().pickLogFile()}>Client.txt seç…</button>}
-            <p className="hint">Genelde: Steam → steamapps\common\Path of Exile 2\logs\Client.txt</p>
+            <h2>Oyunu nerede oynuyorsun?</h2>
+            <div className="seg">
+              <button className={settings.playMode === "local" ? "on" : ""} onClick={() => void api().setSettings({ playMode: "local" })}>
+                Bu bilgisayarda
+              </button>
+              <button className={settings.playMode === "gfn" ? "on" : ""} onClick={() => void api().setSettings({ playMode: "gfn" })}>
+                GeForce Now / bulut
+              </button>
+            </div>
+            {settings.playMode === "gfn" ? (
+              <p>
+                Bulutta oyunun log dosyası ve Ctrl+C bu bilgisayara gelmez. Her map'e girerken bir kısayola basarsın (overlay'de de buton var); map'in kazancı
+                stash farkından otomatik hesaplanır. Bunun için 2. ve 3. adımlar (hesap adı, public sekmeler) şart.
+              </p>
+            ) : (
+              <>
+                <p>Map giriş-çıkışlarını, süreyi ve ölümleri oyunun <code>Client.txt</code> dosyasından okuyoruz.</p>
+                <p className={status.logFound ? "ok" : "warn"}>
+                  {status.logFound ? "✓ Bulundu: " : "✗ Bulunamadı. "}
+                  <code>{status.logPath ?? "—"}</code>
+                </p>
+                {!status.logFound && <button onClick={() => void api().pickLogFile()}>Client.txt seç…</button>}
+                <p className="hint">Genelde: Steam → steamapps\common\Path of Exile 2\logs\Client.txt</p>
+              </>
+            )}
           </section>
         )}
 

@@ -362,3 +362,6 @@ input.ov-val { width: 56px; flex: none; }
 .ov-toast b { font-size: 14px; margin-left: auto; }
 .ov-toast small { width: 100%; color: #fde68a; }
 .ov-toast.warn { background: rgba(251, 191, 36, .12); border-color: rgba(251, 191, 36, .35); }
+
+.gfn-row { margin-top: 6px; }
+.gfn-row button { padding: 4px 6px; }

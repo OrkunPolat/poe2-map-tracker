@@ -19,6 +19,7 @@ import { RunsTable } from "./components/RunsTable";
 import { SettingsView } from "./components/SettingsView";
 import { StashView } from "./components/StashView";
 import { StatsView } from "./components/StatsView";
+import { GFN_FARMS } from "../shared/gfn";
 
 const PAGES = [
   ["track", "Map", "map"],
@@ -88,8 +89,8 @@ export function App() {
             </button>
           )}
           <div className="side-status">
-            <span className={`dot ${status.logFound ? "ok" : "bad"}`} />
-            {status.logFound ? LOCATION_LABEL[state.location.kind] : "Log bulunamadı"}
+            <span className={`dot ${settings.playMode === "gfn" || status.logFound ? "ok" : "bad"}`} />
+            {settings.playMode === "gfn" ? `GeForce Now · ${LOCATION_LABEL[state.location.kind]}` : status.logFound ? LOCATION_LABEL[state.location.kind] : "Log bulunamadı"}
           </div>
           <div className="side-status muted">{prices ? `${prices.league} · 1 div = ${Math.round(prices.exPerDiv ?? 0)} ex` : "Fiyat yok"}</div>
           <div className="side-status muted">v{status.version}</div>
@@ -97,7 +98,7 @@ export function App() {
       </aside>
 
       <main>
-        {!status.logFound && (
+        {!status.logFound && settings.playMode !== "gfn" && (
           <div className="callout warn">
             <Icon name="alert" size={16} /> Client.txt bulunamadı; map takibi çalışmaz.
             <button onClick={() => setPage("settings")}>Ayarlar'da seç</button>
@@ -167,12 +168,27 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
     <>
       <PageHead
         title={active ? active.areaName : "Hideout"}
-        sub={active ? `lvl ${active.areaLevel ?? "?"} · ${active.tablets.length ? tabletSetupKey(active) : "tabletsiz"}` : "Sıradaki map'i hazırla"}
+        sub={
+          active
+            ? `${active.areaLevel ? `lvl ${active.areaLevel} · ` : ""}${active.tablets.length ? tabletSetupKey(active) : "tabletsiz"}`
+            : settings.playMode === "gfn"
+              ? "Map'e girince Yeni map'e bas"
+              : "Sıradaki map'i hazırla"
+        }
       >
-        {active && (
-          <button onClick={() => void api().dispatch({ type: "finishRun" })} title="Aynı map'e tekrar girilmeyecekse">
-            Map'i bitir
-          </button>
+        {settings.playMode === "gfn" ? (
+          <>
+            <button className="primary" onClick={() => void api().gfnStart()}>
+              <Icon name="plus" size={15} /> Yeni map
+            </button>
+            {active && <button onClick={() => void api().gfnEnd()}>Map bitti</button>}
+          </>
+        ) : (
+          active && (
+            <button onClick={() => void api().dispatch({ type: "finishRun" })} title="Aynı map'e tekrar girilmeyecekse">
+              Map'i bitir
+            </button>
+          )
         )}
       </PageHead>
 
@@ -224,6 +240,9 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
           )}
         </section>
 
+        {settings.playMode === "gfn" ? (
+          <GfnCard snap={snap} />
+        ) : (
         <section className="card">
           <div className="card-head">
             <h2>Sıradaki map</h2>
@@ -251,9 +270,60 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
           </details>
           <Screenshots files={pending.screenshots} />
         </section>
+        )}
       </div>
     </>
   );
+}
+
+/** GeForce Now: no log or clipboard in the cloud, so the map is started by hand; loot still comes from the stash. */
+function GfnCard({ snap }: { snap: Snapshot }) {
+  const { settings, status } = snap;
+  const [name, setName] = useState(settings.gfnMapName);
+  const set = (p: Partial<typeof settings>) => void api().setSettings(p);
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>GeForce Now modu</h2>
+        <span className={`pill ${status.gfnHotkeysRegistered ? "ok" : "warn"}`}>{status.gfnHotkeysRegistered ? "kısayollar aktif" : "kısayol kayıtlı değil"}</span>
+      </div>
+      <p className="hint">
+        Her map'e girerken <kbd>{shortcutLabel(settings.gfnStartHotkey)}</kbd>, hideout'a dönünce <kbd>{shortcutLabel(settings.gfnEndHotkey)}</kbd> bas (ya da overlay'deki
+        butonlar). Kazanç stash farkından otomatik hesaplanır.
+      </p>
+      <div className="label">Farm</div>
+      <div className="seg">
+        {GFN_FARMS.map((f) => (
+          <button key={f} className={settings.gfnFarm === f ? "on" : ""} onClick={() => set({ gfnFarm: f })}>
+            {f}
+          </button>
+        ))}
+      </div>
+      <div className="label">Tablet sayısı</div>
+      <div className="seg">
+        {[0, 3, 4].map((n) => (
+          <button key={n} className={settings.gfnTabletCount === n ? "on" : ""} onClick={() => set({ gfnTabletCount: n })}>
+            {n === 0 ? "Tabletsiz" : `${n} tablet`}
+          </button>
+        ))}
+      </div>
+      <div className="label">Map adı (isteğe bağlı)</div>
+      <input value={name} placeholder={`${settings.gfnFarm} map`} onChange={(e) => setName(e.target.value)} onBlur={() => set({ gfnMapName: name })} />
+      {!settings.tradeAccount && <p className="warn">Kazancın otomatik hesaplanması için Ayarlar → Stash'te hesap adını gir.</p>}
+    </section>
+  );
+}
+
+/** "CommandOrControl+Shift+N" -> "⌘⇧N" on Mac, "Ctrl+Shift+N" elsewhere. */
+export function shortcutLabel(acc: string): string {
+  const mac = navigator.platform.toLowerCase().includes("mac");
+  if (!mac) return acc.replace("CommandOrControl", "Ctrl").replace("CmdOrCtrl", "Ctrl");
+  return acc
+    .replace(/CommandOrControl|CmdOrCtrl|Command|Cmd/g, "⌘")
+    .replace(/Control|Ctrl/g, "⌃")
+    .replace(/Shift/g, "⇧")
+    .replace(/Alt|Option/g, "⌥")
+    .replace(/\+/g, "");
 }
 
 /** Where the automatic stash diff stands for this map, and what the previous map brought in. */

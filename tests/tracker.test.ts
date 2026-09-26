@@ -285,3 +285,23 @@ describe("stash diff corrections", () => {
     expect(s.runs[0]!.excluded).toBe(true);
   });
 });
+
+describe("GeForce Now mode", () => {
+  it("stand-in tablets keep farm and tablet-count stats working", async () => {
+    const { gfnTablets } = await import("../src/shared/gfn");
+    const { farmKey, tabletCountKey } = await import("../src/shared/stats");
+    let s = initialState();
+    s = { ...s, pending: { ...s.pending, tablets: gfnTablets("Ritual", 4) } };
+    s = play(s, [
+      { type: "areaGenerated", ts: 0, level: 0, areaId: "MapGFN", seed: "1" },
+      { type: "areaEntered", ts: 0, name: "Ritual map" },
+      { type: "areaGenerated", ts: 300_000, level: 0, areaId: "HideoutGFN", seed: "0" },
+    ]);
+    const r = s.runs[0]!;
+    expect(r.areaName).toBe("Ritual map");
+    expect(farmKey(r)).toBe("Ritual");
+    expect(tabletCountKey(r)).toBe("4 tablet");
+    expect(r.mapTimeMs).toBe(300_000);
+    expect(s.location.kind).toBe("hideout");
+  });
+});
