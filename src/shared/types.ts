@@ -186,6 +186,13 @@ export interface Settings {
   gfnTabletCount: number;
   gfnMapName: string;
   gfnStartHotkey: string;
+  /**
+   * Tabs (by their 990-999 price) the automatic per-map read leaves out: big tabs that rarely
+   * change while mapping cost most of the trade site's request budget. Manual refresh reads all.
+   */
+  autoSkipPrices?: number[];
+  /** The skip list was set (by default rule or by the user); do not recompute it. */
+  autoSkipConfigured?: boolean;
   /** A new league the user chose not to switch to (so it is not offered again). */
   dismissedLeague?: string;
   gfnEndHotkey: string;

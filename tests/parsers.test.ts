@@ -201,3 +201,16 @@ describe("rate limiter shares the budget with other tools", () => {
     expect(blocked.waitMs()).toBeGreaterThanOrEqual(120_000);
   });
 });
+
+describe("partial trade reads", () => {
+  it("keeps tabs that were skipped and replaces the ones read", async () => {
+    const { replaceTradeTabs } = await import("../src/shared/stash");
+    const { tabPrice } = await import("../src/shared/tradeStash");
+    expect(tabPrice("~price 998 divine Rune")).toBe(998);
+    const t = (name: string, n: number) => ({ id: `trade:${name}`, label: name, capturedAt: 0, screenshot: "", source: "trade" as const, items: [{ name: "x", qty: n }] });
+    const before = { history: [], tabs: [t("~price 991 divine Expedition", 1), t("~price 999 divine Gem", 179)] };
+    const after = replaceTradeTabs(before, [t("~price 991 divine Expedition", 5)], new Set([990, 991, 992]));
+    expect(after.tabs.map((x) => [x.label, x.items[0]!.qty])).toEqual([["~price 999 divine Gem", 179], ["~price 991 divine Expedition", 5]]);
+    expect(replaceTradeTabs(before, [t("~price 991 divine Expedition", 5)]).tabs).toHaveLength(1); // full read: gem tab gone = no longer public
+  });
+});

@@ -8,6 +8,7 @@ import { Trend } from "./Trend";
 import { sellHints } from "../../shared/trends";
 import { PageHead } from "../App";
 import { Icon } from "./Icons";
+import { tabPrice } from "../../shared/tradeStash";
 import { UnpricedCard } from "./Unpriced";
 
 /** Special tabs worth reading (Map, Gem and Unique tabs are left out on purpose). */
@@ -87,7 +88,7 @@ export function StashView({ snap, onSetup }: { snap: Snapshot; onSetup: () => vo
         {[...stash.tabs]
           .sort((a, b) => tabValueDiv(b, prices) - tabValueDiv(a, prices))
           .map((t) => (
-            <TabCard key={t.id} tab={t} prices={prices} now={now} />
+            <TabCard key={t.id} tab={t} prices={prices} now={now} autoSkip={settings.autoSkipPrices ?? []} />
           ))}
         {missing.map((c) => (
           <section key={c} className="card tab-card empty-tab">
@@ -100,7 +101,7 @@ export function StashView({ snap, onSetup }: { snap: Snapshot; onSetup: () => vo
   );
 }
 
-function TabCard({ tab, prices, now }: { tab: StashTab; prices?: PriceTable; now: number }) {
+function TabCard({ tab, prices, now, autoSkip }: { tab: StashTab; prices?: PriceTable; now: number; autoSkip: number[] }) {
   const value = tabValueDiv(tab, prices);
   const rows = [...tab.items].sort(
     (a, b) => (b.qty ?? 0) * (prices?.divByName[b.name] ?? 0) - (a.qty ?? 0) * (prices?.divByName[a.name] ?? 0),
@@ -161,6 +162,7 @@ function TabCard({ tab, prices, now }: { tab: StashTab; prices?: PriceTable; now
           })}
         </tbody>
       </table>
+      {trade && <AutoReadToggle tab={tab} autoSkip={autoSkip} />}
       <button className="danger" onClick={() => confirm(`${tab.label} sekmesi silinsin mi?`) && void api().stashDeleteTab(tab.id)}>
         Sekmeyi sil
       </button>
@@ -246,5 +248,28 @@ function SellHints({ snap }: { snap: Snapshot }) {
         )}
       </div>
     </section>
+  );
+}
+
+/** Per-tab switch: include this tab in the automatic per-map read (big tabs cost the most requests). */
+function AutoReadToggle({ tab, autoSkip }: { tab: StashTab; autoSkip: number[] }) {
+  const price = tabPrice(tab.id.replace(/^trade:/, ""));
+  if (price == null) return null;
+  const skip = new Set(autoSkip);
+  const on = !skip.has(price);
+  return (
+    <label className="toggle small-toggle" title="Kapalıysa bu sekme sadece Yenile'de okunur; büyük, map'te değişmeyen sekmeler için">
+      <input
+        type="checkbox"
+        checked={on}
+        onChange={(e) => {
+          if (e.target.checked) skip.delete(price);
+          else skip.add(price);
+          void api().setSettings({ autoSkipPrices: [...skip], autoSkipConfigured: true });
+        }}
+      />
+      <span className="switch" />
+      <span>Her map'te oku {tab.items.length > 80 && <span className="muted">({tab.items.length} item, yavaş)</span>}</span>
+    </label>
   );
 }

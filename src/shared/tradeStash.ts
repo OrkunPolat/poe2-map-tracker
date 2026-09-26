@@ -15,7 +15,25 @@ export interface TradeListing {
   item: { name?: string; typeLine?: string; baseType?: string; stackSize?: number; frameType?: number };
 }
 
-export function searchBody(account: string, price?: number) {
+/** Extra narrowing for tabs with more than 100 items (the trade site's page size). */
+export interface SearchExtra {
+  sort?: "indexed-asc" | "indexed-desc";
+  category?: string;
+}
+
+/** Item categories used to split a >100-item tab into searches that each fit one page. */
+export const SPLIT_CATEGORIES = [
+  "gem.supportgem", "gem.activegem", "gem.metagem", "currency.socketable", "currency.omen", "currency",
+  "map.fragment", "map.tablet", "map.breachstone", "map.bosskey", "map.logbook", "jewel", "accessory", "armour", "weapon", "flask",
+];
+
+/** "~price 998 divine Rune" -> 998 */
+export function tabPrice(stashName: string): number | undefined {
+  const m = /~(?:price|b\/o)\s+(\d+)/i.exec(stashName);
+  return m ? Number(m[1]) : undefined;
+}
+
+export function searchBody(account: string, price?: number, extra: SearchExtra = {}) {
   // Test hook: POE2T_TRADE_PRICE="1-1:exalted" searches another price band (e.g. a real seller's tabs).
   const override = typeof process !== "undefined" ? process.env.POE2T_TRADE_PRICE?.match(/^(\d+)-(\d+):(\w[\w-]*)$/) : null;
   if (override) {
@@ -37,9 +55,10 @@ export function searchBody(account: string, price?: number) {
             price: { option: TRADE_PRICE_CURRENCY, min: price ?? TRADE_PRICE_MIN, max: price ?? TRADE_PRICE_MAX },
           },
         },
+        ...(extra.category ? { type_filters: { filters: { category: { option: extra.category } } } } : {}),
       },
     },
-    sort: { price: "asc" },
+    sort: extra.sort === "indexed-asc" ? { indexed: "asc" } : extra.sort === "indexed-desc" ? { indexed: "desc" } : { price: "asc" },
   };
 }
 

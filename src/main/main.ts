@@ -16,6 +16,7 @@ import { Store } from "./store";
 import { checkForUpdate, installUpdate } from "./updater";
 import { scanStashTab, shutdownStash } from "./stashScan";
 import { otherPublicTabs, syncTradeTabs } from "./tradeSync";
+import { tabPrice } from "../shared/tradeStash";
 import { gfnTablets } from "../shared/gfn";
 import { checkTabs } from "../shared/tabCheck";
 import bundledWaystoneMods from "../shared/data/waystoneMods.json";
@@ -242,18 +243,39 @@ async function doSyncTrade(fullCheck: boolean, auto: boolean): Promise<boolean> 
     if (auto) status.stashMessage = { at: Date.now(), ok: true, text: "Otomatik stash okuması…" };
     push();
     try {
-      const { tabs, truncated, seen } = await syncTradeTabs(store.data.settings.league, account, store.data.prices, USER_AGENT, (text) => {
-        status.stashMessage = { at: Date.now(), ok: true, text };
-        push();
-      });
+      const { settings } = store.data;
+      const skipPrices = auto ? new Set(settings.autoSkipPrices ?? []) : undefined;
+      const { tabs, truncated, seen, readPrices } = await syncTradeTabs(
+        settings.league,
+        account,
+        store.data.prices,
+        USER_AGENT,
+        (text) => {
+          status.stashMessage = { at: Date.now(), ok: true, text };
+          if (!text.startsWith("Trade sınırı")) console.log("[trade]", text);
+          push();
+        },
+        { skipPrices },
+      );
+      // First full read: leave big, slow-changing tabs (gems, runes, 80+ items) out of per-map reads.
+      if (!auto && !settings.autoSkipConfigured && tabs.length) {
+        settings.autoSkipPrices = tabs
+          .filter((t) => /gem|rune/i.test(t.label) || t.items.length > 80)
+          .map((t) => tabPrice(t.id.replace(/^trade:/, "")))
+          .filter((p): p is number => p != null);
+        settings.autoSkipConfigured = true;
+      }
       let others: typeof seen = [];
       if (fullCheck) {
         status.stashMessage = { at: Date.now(), ok: true, text: "Diğer public sekmeler kontrol ediliyor…" };
         push();
-        others = await otherPublicTabs(store.data.settings.league, account, new Set(seen.map((t) => t.stashName)), USER_AGENT);
+        others = await otherPublicTabs(store.data.settings.league, account, new Set(seen.map((t) => t.stashName)), USER_AGENT, (text) => {
+          status.stashMessage = { at: Date.now(), ok: true, text };
+          push();
+        });
       }
       status.tabCheck = { at: Date.now(), full: fullCheck, issues: checkTabs(seen, others) };
-      store.data.stash = replaceTradeTabs(store.data.stash ?? emptyStash(), tabs);
+      store.data.stash = replaceTradeTabs(store.data.stash ?? emptyStash(), tabs, readPrices);
       const items = tabs.reduce((s, t) => s + t.items.length, 0);
       status.stashMessage = {
         at: Date.now(),

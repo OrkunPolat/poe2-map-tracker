@@ -1,4 +1,5 @@
 import type { PriceTable, StashState, StashTab } from "./types";
+import { tabPrice } from "./tradeStash";
 
 export const emptyStash = (): StashState => ({ tabs: [], history: [] });
 
@@ -21,9 +22,18 @@ export function upsertTab(stash: StashState, tab: StashTab): StashState {
   return { ...stash, tabs: prev ? stash.tabs.map((t) => (t.id === tab.id ? merged : t)) : [...stash.tabs, merged] };
 }
 
-/** Trade-synced tabs are replaced as a set: a tab no longer public disappears. */
-export function replaceTradeTabs(stash: StashState, tabs: StashTab[]): StashState {
-  return { ...stash, tabs: [...stash.tabs.filter((t) => t.source !== "trade"), ...tabs] };
+/**
+ * Trade-synced tabs are replaced as a set: a tab no longer public disappears. When only some
+ * tab prices were read (automatic read skipping big tabs), the other trade tabs are kept as they were.
+ */
+export function replaceTradeTabs(stash: StashState, tabs: StashTab[], readPrices?: Set<number>): StashState {
+  const keep = stash.tabs.filter((t) => {
+    if (t.source !== "trade") return true;
+    if (!readPrices) return false;
+    const p = tabPrice(t.id.replace(/^trade:/, ""));
+    return p != null && !readPrices.has(p);
+  });
+  return { ...stash, tabs: [...keep, ...tabs] };
 }
 
 export function setItemQty(stash: StashState, tabId: string, name: string, qty: number | undefined): StashState {
