@@ -186,6 +186,8 @@ export interface Settings {
   gfnTabletCount: number;
   gfnMapName: string;
   gfnStartHotkey: string;
+  /** A new league the user chose not to switch to (so it is not offered again). */
+  dismissedLeague?: string;
   gfnEndHotkey: string;
 }
 

@@ -33,7 +33,7 @@ export function Overlay() {
   const hourNet = hourRuns.reduce((s, r) => s + runNetDiv(r, prices), 0);
   const gapMs = settings.sessionGapMin * 60_000;
   const liveRuns = counted(state.runs.filter((r) => (r.league ?? settings.league) === settings.league));
-  const session = currentSession(groupSessions(liveRuns, gapMs, prices), now, gapMs, !!active);
+  const session = currentSession(groupSessions(liveRuns, gapMs, prices), now, gapMs, active?.id);
 
   return (
     <div className="ov" ref={ref}>
@@ -123,6 +123,10 @@ export function Overlay() {
       <div className="ov-total">
         Bu saat: {hourRuns.length} map · net <b>{fmtDiv(hourNet)} div</b>
       </div>
+      {settings.autoStash && settings.tradeAccount && status.stashHealth?.lastErrorAt &&
+        (!status.stashHealth.lastOkAt || status.stashHealth.lastErrorAt > status.stashHealth.lastOkAt) && (
+          <div className="ov-danger">⚠ Stash okunamıyor: {status.stashHealth.lastError}</div>
+        )}
       {status.lastClosed && now - status.lastClosed.at < 12_000 && (
         <div className={`ov-toast ${status.lastClosed.warnings.length ? "warn" : ""}`}>
           <span>Önceki map · {status.lastClosed.areaName}</span>

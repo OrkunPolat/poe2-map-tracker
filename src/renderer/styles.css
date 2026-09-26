@@ -95,7 +95,8 @@ main { overflow: auto; padding: 26px 32px 40px; display: flex; flex-direction: c
 .page-head p { margin: 2px 0 0; font-size: 13px; }
 .callout { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); background: var(--accent-bg); border: 1px solid rgba(124, 108, 245, .3); color: var(--text-2); }
 .callout.warn { background: rgba(248, 113, 113, .08); border-color: rgba(248, 113, 113, .3); }
-.callout button { margin-left: auto; padding: 4px 10px; }
+.callout button { padding: 4px 10px; }
+.callout button:first-of-type { margin-left: auto; }
 .status-line { margin: 0; font-size: 13px; color: var(--text-2); }
 
 /* ---------- surfaces ---------- */

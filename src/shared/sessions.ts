@@ -43,8 +43,10 @@ export function sessionNetPerHour(s: Session, now?: number): number | undefined 
   return ms > 60_000 ? s.netDiv / (ms / 3_600_000) : undefined;
 }
 
-/** The session still in progress: its last map ended less than `gapMs` ago. */
-export function currentSession(sessions: Session[], now: number, gapMs: number, activeRun: boolean): Session | undefined {
+/** The session still in progress: it holds the map being played, or its last map ended less than `gapMs` ago. */
+export function currentSession(sessions: Session[], now: number, gapMs: number, activeRunId?: string): Session | undefined {
   const last = sessions[sessions.length - 1];
-  return last && (activeRun || now - last.end <= gapMs) ? last : undefined;
+  if (!last) return undefined;
+  if (activeRunId) return last.runs.some((r) => r.id === activeRunId) ? last : undefined;
+  return now - last.end <= gapMs ? last : undefined;
 }

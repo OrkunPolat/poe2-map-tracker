@@ -25,6 +25,7 @@ async function call<T>(limiter: RateLimiter, url: string, userAgent: string, bod
       body: body ? JSON.stringify(body) : undefined,
     });
     limiter.update(res.headers.get("x-rate-limit-ip"));
+    limiter.syncState(res.headers.get("x-rate-limit-ip-state"));
     if (res.status === 429) {
       limiter.block(Number(res.headers.get("retry-after")) || 60);
       continue;

@@ -186,3 +186,18 @@ describe("tab setup check", () => {
     expect(issues.filter((i) => i.kind === "missing").map((i) => (i as { suggested: string }).suggested)).toContain("~price 990 divine Currency");
   });
 });
+
+describe("rate limiter shares the budget with other tools", () => {
+  it("waits when the server says the IP already used the window", async () => {
+    const { RateLimiter } = await import("../src/shared/tradeStash");
+    let t = 0;
+    const rl = new RateLimiter(() => t);
+    rl.update("5:10:60,15:60:300");
+    rl.syncState("4:10:0,4:60:0"); // someone else already made 4 requests
+    expect(rl.waitMs()).toBeGreaterThan(9000);
+    const blocked = new RateLimiter(() => t);
+    blocked.update("5:10:60");
+    blocked.syncState("5:10:120"); // restricted for 120 s
+    expect(blocked.waitMs()).toBeGreaterThanOrEqual(120_000);
+  });
+});

@@ -97,6 +97,24 @@ export class RateLimiter {
     if (rules.length) this.rules = rules;
   }
 
+  /**
+   * Aligns with the server's own count ("hits:period:restricted,..."), which also includes
+   * requests from other tools on the same IP (PoE Overlay, Exiled Exchange...).
+   */
+  syncState(stateHeader: string | null) {
+    if (!stateHeader) return;
+    const t = this.now();
+    stateHeader.split(",").forEach((part, i) => {
+      const [hits, period, restricted] = part.split(":").map(Number);
+      if (restricted && restricted > 0) this.block(restricted);
+      const rule = this.rules[i];
+      if (!rule || !hits || period == null || !Number.isFinite(hits)) return;
+      const local = this.hits.filter((h) => h > t - period * 1000).length;
+      // Other tools used part of this window: count their requests as if made just now.
+      for (let k = local; k < hits; k++) this.hits.push(t);
+    });
+  }
+
   block(seconds: number) {
     this.blockedUntil = Math.max(this.blockedUntil, this.now() + seconds * 1000);
   }

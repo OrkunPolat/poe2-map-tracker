@@ -105,6 +105,15 @@ export function App() {
           </div>
         )}
         {status.updateError && <div className="callout warn">Güncelleme hatası: {status.updateError}</div>}
+        {status.newLeague && (
+          <div className="callout">
+            Yeni lig başladı: <b>{status.newLeague}</b>. Fiyatlar, stash okuma ve yeni map'ler bu lige geçsin mi?
+            <button className="primary" onClick={() => void api().answerNewLeague(true)}>
+              Geç
+            </button>
+            <button onClick={() => void api().answerNewLeague(false)}>{settings.league}'de kal</button>
+          </div>
+        )}
         {page === "track" && <TrackView snap={snap} now={now} />}
         {page === "history" && <HistoryView snap={snap} now={now} runs={leagueRuns} leaguePicker={leaguePicker} />}
         {page === "stats" && <StatsView runs={counted(leagueRuns)} prices={prices} gapMin={settings.sessionGapMin} leaguePicker={leaguePicker} />}
@@ -158,7 +167,7 @@ function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
   const current = active ?? state.runs[state.runs.length - 1];
   const gapMs = settings.sessionGapMin * 60_000;
   const liveRuns = counted(inLeague(state.runs, settings.league, settings.league));
-  const session = currentSession(groupSessions(liveRuns, gapMs, prices), now, gapMs, !!active);
+  const session = currentSession(groupSessions(liveRuns, gapMs, prices), now, gapMs, active?.id);
   const auto = settings.autoStash && !!settings.tradeAccount;
   // The map before the current one is where the automatic loot shows up once it is closed.
   const idx = current ? state.runs.findIndex((r) => r.id === current.id) : -1;
@@ -334,6 +343,12 @@ function AutoLootStatus({ snap, now, current, previous }: { snap: Snapshot; now:
   const shown = current.stashLoot ? current : previous?.stashLoot ? previous : undefined;
   return (
     <div className="auto-loot">
+      {readFailing(status) && (
+        <div className="suspect">
+          <Icon name="alert" size={14} />
+          <span>Stash okunamıyor: {status.stashHealth!.lastError}. Bu sırada biten map'lerin kazancı hesaplanamaz.</span>
+        </div>
+      )}
       <div className="auto-head">
         <Icon name="refresh" size={15} />
         {current.stashLoot
@@ -409,6 +424,12 @@ export function StashDiff({ run, snap, title, limit }: { run: Run; snap: Snapsho
       </label>
     </div>
   );
+}
+
+/** The last trade read failed and nothing has worked since. */
+export function readFailing(status: Snapshot["status"]): boolean {
+  const h = status.stashHealth;
+  return !!h?.lastErrorAt && (!h.lastOkAt || h.lastErrorAt > h.lastOkAt);
 }
 
 export function Stat({ label, value, sub, tone, accent }: { label: string; value: string; sub?: string; tone?: "pos" | "neg"; accent?: boolean }) {

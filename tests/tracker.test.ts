@@ -305,3 +305,15 @@ describe("GeForce Now mode", () => {
     expect(s.location.kind).toBe("hideout");
   });
 });
+
+describe("current session", () => {
+  it("is only 'in progress' if it holds the active map", async () => {
+    const { currentSession, groupSessions } = await import("../src/shared/sessions");
+    const min = 60_000;
+    const mk = (id: string, start: number) => ({ id, startedAt: start * min, endedAt: (start + 5) * min, areaId: "", areaName: id, tablets: [], loot: [], deaths: 0, mapTimeMs: 5 * min, screenshots: [], note: "" });
+    const sessions = groupSessions([mk("old", 0)], 30 * min);
+    expect(currentSession(sessions, 2000 * min, 30 * min, "someOtherActiveRun")).toBeUndefined();
+    expect(currentSession(sessions, 2000 * min, 30 * min, "old")).toBe(sessions[0]);
+    expect(currentSession(sessions, 20 * min, 30 * min)).toBe(sessions[0]);
+  });
+});

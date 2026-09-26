@@ -177,6 +177,9 @@ async function refreshPrices() {
   try {
     status.leagues = await fetchLeagues(net.fetch as typeof fetch, USER_AGENT);
     const { settings } = store.data;
+    // poe.ninja lists the current challenge league first; offer it once when a new one starts.
+    const top = status.leagues[0];
+    status.newLeague = settings.league && top && top !== settings.league && settings.dismissedLeague !== top && !/^(Standard|Hardcore|HC )/.test(top) ? top : undefined;
     if (!settings.league || !status.leagues.includes(settings.league)) {
       // poe.ninja lists the current challenge league first.
       settings.league = status.leagues[0] ?? settings.league;
@@ -260,8 +263,12 @@ async function doSyncTrade(fullCheck: boolean, auto: boolean): Promise<boolean> 
           : "Trade sitesinde bu hesapta ~price 990-999 divine fiyatlı public sekme bulunamadı. Kurulum adımlarına bak; trade sitesi değişiklikleri birkaç dakika gecikmeyle görür.",
       };
       ok = tabs.length > 0;
+      status.stashHealth = ok
+        ? { lastOkAt: Date.now() }
+        : { ...status.stashHealth, lastError: "Public sekme bulunamadı (hesap adı / sekme adları?)", lastErrorAt: Date.now() };
     } catch (e) {
       status.stashMessage = { at: Date.now(), ok: false, text: (e as Error).message };
+      status.stashHealth = { ...status.stashHealth, lastError: (e as Error).message, lastErrorAt: Date.now() };
     }
     status.stashBusy = false;
   }
@@ -600,6 +607,16 @@ function setupIpc() {
   ipcMain.handle("stash:refresh", () => refreshStash());
   ipcMain.handle("stash:checkSetup", () => refreshStash(true));
   ipcMain.handle("gfn:start", () => gfnStart());
+  ipcMain.handle("league:answer", async (_, switchTo: boolean) => {
+    const next = status.newLeague;
+    if (!next) return;
+    if (switchTo) store.data.settings.league = next;
+    else store.data.settings.dismissedLeague = next;
+    status.newLeague = undefined;
+    store.save();
+    if (switchTo) await refreshPrices();
+    push();
+  });
   ipcMain.handle("gfn:end", () => gfnEnd());
   ipcMain.handle("price:custom", (_, name: string, div: number | undefined) => {
     const custom = (store.data.customPrices ??= {});

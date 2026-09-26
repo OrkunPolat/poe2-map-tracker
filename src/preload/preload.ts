@@ -22,6 +22,7 @@ const api: Api = {
   checkTabSetup: () => ipcRenderer.invoke("stash:checkSetup"),
   gfnStart: () => ipcRenderer.invoke("gfn:start"),
   gfnEnd: () => ipcRenderer.invoke("gfn:end"),
+  answerNewLeague: (switchTo) => ipcRenderer.invoke("league:answer", switchTo),
   setCustomPrice: (name, div) => ipcRenderer.invoke("price:custom", name, div),
   captureRect: (rect, mode) => ipcRenderer.invoke("capture:rect", rect, mode),
   copyText: (text) => ipcRenderer.send("clipboard:write", text),

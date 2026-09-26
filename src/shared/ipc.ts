@@ -29,6 +29,10 @@ export interface Status {
   /** Set while a stash tab is being read. */
   stashBusy?: boolean;
   stashMessage?: { at: number; ok: boolean; text: string };
+  /** poe.ninja lists a new challenge league that is not the one selected. */
+  newLeague?: string;
+  /** Last automatic/manual trade read: when it last worked and the last error, if newer. */
+  stashHealth?: { lastOkAt?: number; lastError?: string; lastErrorAt?: number };
   /** The map whose automatic loot was just calculated (overlay shows it briefly). */
   lastClosed?: { runId: string; areaName: string; gainDiv: number; spentDiv: number; warnings: string[]; at: number };
   /** Automatic stash reading for the current map: when it is due, or when it happened. */
@@ -94,6 +98,8 @@ export interface Api {
   /** GeForce Now mode: a map starts / the player is back in the hideout. */
   gfnStart(): Promise<void>;
   gfnEnd(): Promise<void>;
+  /** Answer the new-league prompt: switch to it, or keep the current one. */
+  answerNewLeague(switchTo: boolean): Promise<void>;
   /** Give an unpriced item a value in Divine; undefined removes it. */
   setCustomPrice(name: string, div: number | undefined): Promise<void>;
   /** Screenshot of a region of the main window (CSS pixels) to a PNG file or the clipboard. */
