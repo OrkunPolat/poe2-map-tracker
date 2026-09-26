@@ -200,3 +200,20 @@ table.runs.summary { table-layout: fixed; }
 
 .banner.update { background: #2c2418; border-bottom: 1px solid var(--gold); display: flex; gap: 10px; align-items: center; }
 .banner.update button { padding: 3px 10px; }
+
+.stash { display: flex; flex-direction: column; gap: 14px; }
+.stash-head { display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+.stash-head .big { font-size: 30px; font-weight: 700; color: var(--gold-2); font-variant-numeric: tabular-nums; }
+.stash-head .big .muted { font-size: 16px; font-weight: 400; }
+.small-caps { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; }
+.stash-actions { text-align: right; max-width: 280px; }
+.stash-actions button { font-size: 15px; padding: 8px 18px; }
+.how { line-height: 1.7; }
+.stash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+.tab-card h3 { margin: 0; }
+.tab-card .small { font-size: 12px; margin: 4px 0 8px; }
+.tab-card a { color: var(--gold); }
+.empty-tab { opacity: .5; }
+tr.unread td:first-child { color: var(--bad); }
+tr.unread input { border-color: var(--bad); }
+.loot-table td.num { white-space: nowrap; }

@@ -1,4 +1,4 @@
-import type { PriceTable, Settings, TrackerState } from "./types";
+import type { PriceTable, Settings, StashState, TrackerState } from "./types";
 
 export interface UpdateInfo {
   version: string;
@@ -23,6 +23,10 @@ export interface Status {
   priceError?: string;
   hotkeyRegistered: boolean;
   overlayHotkeyRegistered: boolean;
+  stashHotkeyRegistered: boolean;
+  /** Set while a stash tab is being read. */
+  stashBusy?: boolean;
+  stashMessage?: { at: number; ok: boolean; text: string };
   leagues: string[];
 }
 
@@ -36,6 +40,7 @@ export interface Snapshot {
   state: TrackerState;
   settings: Settings;
   prices?: PriceTable;
+  stash: StashState;
   status: Status;
   debug: DebugInfo;
   now: number;
@@ -68,6 +73,9 @@ export interface Api {
   refreshPrices(): Promise<void>;
   openDataFolder(): Promise<void>;
   checkUpdate(): Promise<void>;
+  stashRefresh(): Promise<void>;
+  stashSetQty(tabId: string, name: string, qty: number | undefined): Promise<void>;
+  stashDeleteTab(tabId: string): Promise<void>;
   installUpdate(): Promise<void>;
   resizeOverlay(height: number): void;
   showMain(): void;

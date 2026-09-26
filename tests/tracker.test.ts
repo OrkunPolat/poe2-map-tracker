@@ -199,3 +199,17 @@ describe("consumable costs and sessions", () => {
     expect(sessionNetPerHour(sessions[0]!)).toBeCloseTo(18);
   });
 });
+
+describe("stash state", () => {
+  it("replaces a re-read tab but keeps counts the user typed in", async () => {
+    const { emptyStash, setItemQty, stashValueDiv, upsertTab } = await import("../src/shared/stash");
+    const prices = { league: "x", fetchedAt: 0, divByName: { "Omen of Light": 7.5, "Omen of Chance": 17.8 } };
+    let s = upsertTab(emptyStash(), { id: "Ritual", label: "Ritual", capturedAt: 1, screenshot: "a.png", items: [{ name: "Omen of Light", qty: 2 }, { name: "Omen of Chance" }] });
+    expect(stashValueDiv(s, prices)).toBe(15);
+    s = setItemQty(s, "Ritual", "Omen of Chance", 1);
+    s = upsertTab(s, { id: "Ritual", label: "Ritual", capturedAt: 2, screenshot: "b.png", items: [{ name: "Omen of Light", qty: 3 }, { name: "Omen of Chance" }] });
+    expect(s.tabs).toHaveLength(1);
+    expect(s.tabs[0]!.items).toEqual([{ name: "Omen of Light", qty: 3 }, { name: "Omen of Chance", qty: 1, edited: true }]);
+    expect(stashValueDiv(s, prices)).toBeCloseTo(40.3);
+  });
+});

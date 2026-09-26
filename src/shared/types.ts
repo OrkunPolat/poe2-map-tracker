@@ -149,6 +149,7 @@ export interface Settings {
   /** Last dragged position; undefined = top-right of the primary display. */
   overlayPos?: { x: number; y: number };
   overlayOpacity: number;
+  stashHotkey: string;
 }
 
 export interface PriceTable {
@@ -158,8 +159,34 @@ export interface PriceTable {
   divByName: Record<string, number>;
   /** poe.ninja category -> items sorted by price, most expensive first. */
   byCategory?: Record<string, Array<{ name: string; div: number }>>;
+  /** Item name -> icon URL (poe.ninja CDN), used by the stash reader. */
+  imageByName?: Record<string, string>;
   /** Exalted Orbs per Divine Orb. */
   exPerDiv?: number;
+}
+
+export interface StashItem {
+  name: string;
+  /** Undefined when the count could not be read; the UI asks the user. */
+  qty?: number;
+  /** User typed the count in. */
+  edited?: boolean;
+}
+
+export interface StashTab {
+  id: string;
+  label: string;
+  /** poe.ninja category the items mostly belong to (Ritual, Abyss...). */
+  category?: string;
+  capturedAt: number;
+  screenshot: string;
+  items: StashItem[];
+}
+
+export interface StashState {
+  tabs: StashTab[];
+  /** Total stash value over time, one point per "Yenile". */
+  history: Array<{ ts: number; div: number }>;
 }
 
 export type TrackerEvent =

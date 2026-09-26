@@ -1,13 +1,14 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { initialState } from "../shared/tracker";
-import type { PriceTable, Settings, TrackerState } from "../shared/types";
+import type { PriceTable, Settings, StashState, TrackerState } from "../shared/types";
 
 export interface Persisted {
   version: 1;
   state: TrackerState;
   settings: Settings;
   prices?: PriceTable;
+  stash?: StashState;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -28,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   overlayEnabled: true,
   overlayHotkey: "Ctrl+Shift+O",
   overlayOpacity: 0.9,
+  stashHotkey: "Ctrl+Shift+T",
 };
 
 export class Store {

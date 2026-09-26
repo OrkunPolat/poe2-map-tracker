@@ -4,13 +4,18 @@ const BASE = "https://poe.ninja/poe2/api/economy";
 /** poe.ninja PoE2 exchange categories that realistically drop from maps. */
 export const PRICE_TYPES = [
   "Currency", "Fragments", "Ritual", "Expedition", "Delirium", "Breach", "Abyss",
-  "Essences", "SoulCores", "Runes", "Verisium", "UncutGems",
+  "Essences", "SoulCores", "Runes", "Idols", "Verisium", "UncutGems", "LineageSupportGems",
+];
+
+/** poe.ninja categories whose items live in special stash tabs (what the stash reader looks for). */
+export const STASH_CATEGORIES = [
+  "Currency", "Fragments", "Ritual", "Expedition", "Delirium", "Breach", "Abyss", "Essences", "SoulCores", "Runes", "Idols", "Verisium",
 ];
 
 interface ExchangeOverview {
   core?: { primary?: string };
   lines?: Array<{ id: string; primaryValue?: number }>;
-  items?: Array<{ id: string; name: string }>;
+  items?: Array<{ id: string; name: string; image?: string }>;
 }
 
 export async function fetchLeagues(fetchFn: typeof fetch, userAgent: string): Promise<string[]> {
@@ -46,6 +51,7 @@ export const FARM_CATEGORY: Record<string, string> = {
 export async function fetchPrices(league: string, fetchFn: typeof fetch, userAgent: string): Promise<PriceTable> {
   const divByName: Record<string, number> = { "Divine Orb": 1 };
   const byCategory: Record<string, Array<{ name: string; div: number }>> = {};
+  const imageByName: Record<string, string> = {};
   const errors: string[] = [];
   await Promise.all(
     PRICE_TYPES.map(async (type) => {
@@ -53,7 +59,9 @@ export async function fetchPrices(league: string, fetchFn: typeof fetch, userAge
       try {
         const res = await fetchFn(url, { headers: { "User-Agent": userAgent } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const prices = overviewToPrices((await res.json()) as ExchangeOverview);
+        const data = (await res.json()) as ExchangeOverview;
+        const prices = overviewToPrices(data);
+        for (const it of data.items ?? []) if (it.image && prices[it.name] != null) imageByName[it.name] = `https://web.poecdn.com${it.image}`;
         Object.assign(divByName, prices);
         byCategory[type] = Object.entries(prices)
           .map(([name, div]) => ({ name, div }))
@@ -66,5 +74,5 @@ export async function fetchPrices(league: string, fetchFn: typeof fetch, userAge
   if (errors.length === PRICE_TYPES.length) throw new Error(`poe.ninja unreachable (${errors[0]})`);
   divByName["Divine Orb"] = 1;
   const ex = divByName["Exalted Orb"];
-  return { league, fetchedAt: Date.now(), divByName, byCategory, exPerDiv: ex ? 1 / ex : undefined };
+  return { league, fetchedAt: Date.now(), divByName, byCategory, imageByName, exPerDiv: ex ? 1 / ex : undefined };
 }

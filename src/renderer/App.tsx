@@ -8,6 +8,7 @@ import { CostEditor } from "./components/CostEditor";
 import { LootPanel } from "./components/LootPanel";
 import { RunsTable } from "./components/RunsTable";
 import { DebugView, SettingsView } from "./components/SettingsView";
+import { StashView } from "./components/StashView";
 import { StatsView } from "./components/StatsView";
 import { Screenshots, TabletCard, WaystoneCard } from "./components/Items";
 
@@ -15,6 +16,7 @@ const TABS = [
   ["track", "Takip"],
   ["runs", "Geçmiş"],
   ["stats", "İstatistik"],
+  ["stash", "Stash"],
   ["settings", "Ayarlar"],
   ["debug", "Debug"],
 ] as const;
@@ -78,6 +80,7 @@ export function App() {
         {tab === "track" && <TrackView snap={snap} now={now} />}
         {tab === "runs" && <RunsTable state={state} prices={prices} favorites={settings.favoriteCurrencies} now={now} />}
         {tab === "stats" && <StatsView runs={state.runs} prices={prices} gapMin={settings.sessionGapMin} />}
+        {tab === "stash" && <StashView snap={snap} />}
         {tab === "settings" && <SettingsView snap={snap} />}
         {tab === "debug" && <DebugView snap={snap} />}
       </main>

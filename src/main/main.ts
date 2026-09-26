@@ -14,6 +14,8 @@ import type { Settings, TrackerEvent } from "../shared/types";
 import { LogTail, detectLogPath, readTailLines } from "./logTail";
 import { Store } from "./store";
 import { checkForUpdate, installUpdate } from "./updater";
+import { scanStashTab, shutdownStash } from "./stashScan";
+import { emptyStash, setItemQty, stashValueDiv, upsertTab } from "../shared/stash";
 
 // Test hooks: POE2T_DATA isolates the data dir, POE2T_LOG forces a log file, POE2T_SMOKE writes a screenshot and quits.
 if (process.env.POE2T_DATA) app.setPath("userData", resolve(process.env.POE2T_DATA));
@@ -28,13 +30,13 @@ let overlay: BrowserWindow | null = null;
 const OVERLAY_WIDTH = 300;
 let store: Store;
 let tail: LogTail | undefined;
-const status: Snapshot["status"] = { version: app.getVersion(), logFound: false, hotkeyRegistered: false, overlayHotkeyRegistered: false, leagues: [] };
+const status: Snapshot["status"] = { version: app.getVersion(), logFound: false, hotkeyRegistered: false, overlayHotkeyRegistered: false, stashHotkeyRegistered: false, leagues: [] };
 const debug: Snapshot["debug"] = { recentLog: [] };
 const shotsDir = () => join(app.getPath("userData"), "screenshots");
 
 function snapshot(): Snapshot {
   const { state, settings, prices } = store.data;
-  return { state, settings, prices, status, debug, now: Date.now() };
+  return { state, settings, prices, stash: store.data.stash ?? emptyStash(), status, debug, now: Date.now() };
 }
 
 let pushTimer: NodeJS.Timeout | undefined;
@@ -163,6 +165,46 @@ async function refreshPrices() {
   push();
 }
 
+// ---------- Stash ----------
+async function readStashTab() {
+  if (status.stashBusy) return;
+  const prices = store.data.prices;
+  if (!prices?.byCategory) {
+    status.stashMessage = { at: Date.now(), ok: false, text: "Önce fiyatlar yüklenmeli (poe.ninja)." };
+    return push();
+  }
+  status.stashBusy = true;
+  push();
+  try {
+    const { tab } = await scanStashTab(prices, USER_AGENT, shotsDir());
+    store.data.stash = upsertTab(store.data.stash ?? emptyStash(), tab);
+    store.save();
+    const unread = tab.items.filter((i) => i.qty == null).length;
+    status.stashMessage = {
+      at: Date.now(),
+      ok: tab.items.length > 0,
+      text: tab.items.length
+        ? `${tab.label}: ${tab.items.length} item okundu${unread ? `, ${unread} sayı okunamadı` : ""}.`
+        : "Sekmede tanınan item bulunamadı.",
+    };
+  } catch (e) {
+    status.stashMessage = { at: Date.now(), ok: false, text: (e as Error).message };
+  }
+  status.stashBusy = false;
+  push();
+}
+
+/** Re-prices every saved tab and records the total for the history chart. */
+async function refreshStash() {
+  await refreshPrices();
+  const stash = store.data.stash ?? emptyStash();
+  if (stash.tabs.length) {
+    store.data.stash = { ...stash, history: [...stash.history, { ts: Date.now(), div: stashValueDiv(stash, store.data.prices) }].slice(-500) };
+    store.save();
+  }
+  push();
+}
+
 // ---------- Updates ----------
 async function checkUpdate() {
   try {
@@ -223,6 +265,7 @@ function registerHotkeys() {
   globalShortcut.unregisterAll();
   const { settings } = store.data;
   status.hotkeyRegistered = tryRegister(settings.screenshotHotkey, () => void takeScreenshot().catch(console.error));
+  status.stashHotkeyRegistered = tryRegister(settings.stashHotkey, () => void readStashTab());
   status.overlayHotkeyRegistered = tryRegister(settings.overlayHotkey, () => {
     store.data.settings.overlayEnabled = !store.data.settings.overlayEnabled;
     store.save();
@@ -322,7 +365,7 @@ function setupIpc() {
     store.data.settings = { ...prev, ...patch };
     store.save();
     if (patch.logPath !== undefined && patch.logPath !== prev.logPath) startLog();
-    if (patch.screenshotHotkey !== undefined || patch.overlayHotkey !== undefined) registerHotkeys();
+    if (patch.screenshotHotkey !== undefined || patch.overlayHotkey !== undefined || patch.stashHotkey !== undefined) registerHotkeys();
     if (patch.overlayEnabled !== undefined || patch.overlayOpacity !== undefined) syncOverlay();
     if ("overlayPos" in patch && !patch.overlayPos) overlay?.setPosition(defaultOverlayPos().x, defaultOverlayPos().y);
     if (patch.alwaysOnTop !== undefined) win?.setAlwaysOnTop(patch.alwaysOnTop, "screen-saver");
@@ -353,6 +396,18 @@ function setupIpc() {
   });
   ipcMain.handle("prices:refresh", () => refreshPrices());
   ipcMain.handle("update:check", () => checkUpdate());
+  ipcMain.handle("stash:refresh", () => refreshStash());
+  ipcMain.handle("stash:setQty", (_, tabId: string, name: string, qty: number | undefined) => {
+    store.data.stash = setItemQty(store.data.stash ?? emptyStash(), tabId, name, qty);
+    store.save();
+    push();
+  });
+  ipcMain.handle("stash:deleteTab", (_, tabId: string) => {
+    const s = store.data.stash ?? emptyStash();
+    store.data.stash = { ...s, tabs: s.tabs.filter((t) => t.id !== tabId) };
+    store.save();
+    push();
+  });
   ipcMain.handle("update:install", () => runUpdate());
   ipcMain.handle("folder:data", () => shell.openPath(app.getPath("userData")));
   ipcMain.on("overlay:resize", (_, height: number) => {
@@ -436,11 +491,13 @@ app.whenReady().then(() => {
   void refreshPrices();
   setInterval(() => void refreshPrices(), PRICE_REFRESH_MS);
   void checkUpdate();
+  if (process.env.POE2T_STASH_IMAGE) setTimeout(() => void readStashTab(), 3000);
   setInterval(() => void checkUpdate(), 6 * 60 * 60 * 1000);
 });
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
+  void shutdownStash();
   store?.flush();
 });
 app.on("window-all-closed", () => app.quit());

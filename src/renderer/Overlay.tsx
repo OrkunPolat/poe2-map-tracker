@@ -22,7 +22,7 @@ export function Overlay() {
   }, [snap === undefined]);
 
   if (!snap) return null;
-  const { state, prices, settings } = snap;
+  const { state, prices, settings, status } = snap;
   const active = state.runs.find((r) => r.id === state.activeRunId);
   const last = active ?? state.runs[state.runs.length - 1];
   const inMap = state.location.kind === "map" && !!active;
@@ -107,6 +107,10 @@ export function Overlay() {
       <div className="ov-total">
         Bu saat: {hourRuns.length} map · net <b>{fmtDiv(hourNet)} div</b>
       </div>
+      {status.stashBusy && <div className="ov-total gold">Stash okunuyor…</div>}
+      {!status.stashBusy && status.stashMessage && now - status.stashMessage.at < 8000 && (
+        <div className={`ov-total ${status.stashMessage.ok ? "ok" : "warn"}`}>{status.stashMessage.text}</div>
+      )}
       {session && (
         <div className="ov-total">
           Oturum {formatDuration(now - session.start)}: <b>{fmtDiv(sessionNetPerHour(session, now) ?? 0)} div/saat</b>

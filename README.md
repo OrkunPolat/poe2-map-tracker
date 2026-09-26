@@ -35,6 +35,7 @@ Her map'e **hangi waystone ve tabletlerle** girdiğini, **süreyi**, **ölümler
 | 🧪 **Juice maliyeti** | Farm'ına göre poe.ninja'nın en pahalı 10 item'ı: Ritual → omen'ler, Abyss → abyss currency'leri, Breach → catalyst'ler… |
 | ⏱️ **Gerçek saatlik** | Oturum bazlı div/saat: hideout, trade ve craft süresi de dahil |
 | 📊 **İstatistik** | Oturumlar, farm, map, 3 vs 4 tablet, setup, saatlik ve waystone stat aralıkları |
+| 🏦 **Stash değeri** | Özel sekmeleri (Currency, Ritual, Abyss, Delirium, Breach, Expedition, Essence, Fragment, Rune…) ekrandan okur, poe.ninja ile fiyatlar |
 | 🔄 **Tek tık güncelleme** | Yeni sürüm çıkınca "Güncelle"ye bas, exe kendini yeniler; tekrar indirmen gerekmez |
 | 🖥️ **Overlay** | Oyun üstünde her zaman görünen panel, tıklayınca oyundan odağı çalmaz |
 | 📈 **Canlı fiyat** | poe.ninja PoE2 fiyatları, Divine bazında, 30 dk'da bir |
@@ -56,6 +57,7 @@ Her map'e **hangi waystone ve tabletlerle** girdiğini, **süreyi**, **ölümler
 | :-- | :-- |
 | <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>C</kbd> | Oyunda item üstünde: waystone / tablet'i hazırlığa ekler (<kbd>Ctrl</kbd> + <kbd>C</kbd> de olur) |
 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd> | Overlay'i aç / kapat |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd> | Oyunda açık olan özel stash sekmesini okur |
 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> | Ekran görüntüsü alır, aktif map'e (hideout'taysan sonraki map'e) ekler |
 | Tık · <kbd>Shift</kbd>+Tık · Sağ tık | Loot butonu: +1 · +10 · −1 |
 | <kbd>Enter</kbd> · <kbd>Esc</kbd> | Değerli item formu: ekle · vazgeç |
@@ -112,12 +114,24 @@ Her tabloda map sayısı, ortalama loot, ortalama maliyet, **net/map**, ortalama
 <img src="docs/screenshots/gecmis.png" alt="Geçmiş" width="100%">
 </details>
 
+## 🏦 Stash
+
+Oyunda özel bir stash sekmesini aç, <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd> bas. Uygulama ekranın sol yarısının görüntüsünü alır:
+
+- Item'ları **ikonlarından** tanır (poe.ninja ikonlarıyla karşılaştırarak, sekme düzeninden bağımsız)
+- Stack sayılarını **OCR** ile okur; okuyamadığı sayıyı kırmızı işaretler, elle girersin
+- **⟳ Yenile** tüm okunmuş sekmeleri güncel fiyatla yeniden hesaplar ve değeri geçmişe kaydeder
+
+> [!NOTE]
+> Sekmeleri uygulama kendisi değiştiremez: oyuna tıklama göndermek GGG kurallarına aykırı. Her sekme için bir kez tuşa basman yeterli. İlk okumada ~500 ikon ve OCR dil dosyası indirilir (internet gerekir). Gem, Map ve Unique sekmeleri desteklenmiyor.
+
 ## 🔒 Güvenli mi?
 
 | Veri | Kaynak |
 | :-- | :-- |
 | Map, süre, ölüm | `Client.txt` log dosyası (GGG izin veriyor) |
 | Waystone / tablet | Oyunun kendi `Ctrl+C` item metni (pano) |
+| Stash | Senin bastığın tuşla alınan ekran görüntüsü, bilgisayarında işlenir |
 | Fiyatlar | [poe.ninja](https://poe.ninja/poe2) |
 
 > [!IMPORTANT]

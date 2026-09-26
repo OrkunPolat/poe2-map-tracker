@@ -10,6 +10,7 @@ export function SettingsView({ snap }: { snap: Snapshot }) {
   const [favs, setFavs] = useState(settings.favoriteCurrencies.join("\n"));
   const [charName, setCharName] = useState(settings.characterName);
   const [ovKey, setOvKey] = useState(settings.overlayHotkey);
+  const [stashKey, setStashKey] = useState(settings.stashHotkey);
 
   return (
     <div className="settings">
@@ -78,6 +79,16 @@ export function SettingsView({ snap }: { snap: Snapshot }) {
           <button onClick={() => set({ overlayPos: undefined })}>Sağ üste geri al</button>
         </div>
         <p className="hint">Panel sürüklenerek taşınabilir, yeri hatırlanır. Oyun Windowed Fullscreen (borderless) modda olmalı; exclusive fullscreen'de görünmez. İlk 4 loot butonu panelde de var.</p>
+      </section>
+
+      <section>
+        <h3>Stash okuma kısayolu</h3>
+        <div className="row">
+          <input value={stashKey} onChange={(e) => setStashKey(e.target.value)} />
+          <button onClick={() => set({ stashHotkey: stashKey })}>Kaydet</button>
+          <span className={status.stashHotkeyRegistered ? "ok" : "warn"}>{status.stashHotkeyRegistered ? "aktif" : "kayıtlı değil"}</span>
+        </div>
+        <p className="hint">Oyunda özel stash sekmesi açıkken bas; sekme okunup Stash ekranına eklenir.</p>
       </section>
 
       <section>
