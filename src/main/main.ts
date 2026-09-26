@@ -10,7 +10,7 @@ import { classifyArea, parseLogLine, prettyAreaId } from "../shared/logParser";
 import { fetchLeagues, fetchPrices } from "../shared/prices";
 import { runsToCsv } from "../shared/stats";
 import { reduce } from "../shared/tracker";
-import type { Settings, TrackerEvent } from "../shared/types";
+import type { Settings, TrackerEvent, TrackerState } from "../shared/types";
 import { LogTail, detectLogPath, readTailLines } from "./logTail";
 import { Store } from "./store";
 import { checkForUpdate, installUpdate } from "./updater";
@@ -21,6 +21,7 @@ import bundledWaystoneMods from "../shared/data/waystoneMods.json";
 import { parseWaystoneMods } from "../shared/waystoneModsParse.mjs";
 import type { WaystoneModFamily } from "../shared/waystoneDanger";
 import { emptyStash, replaceTradeTabs, setItemQty, stashValueDiv, upsertTab } from "../shared/stash";
+import { diffQty, stashQty, toStashLoot, type Qty } from "../shared/stashDiff";
 
 // Test hooks: POE2T_DATA isolates the data dir, POE2T_LOG forces a log file, POE2T_SMOKE writes a screenshot and quits.
 if (process.env.POE2T_DATA) app.setPath("userData", resolve(process.env.POE2T_DATA));
@@ -59,6 +60,7 @@ function push() {
 
 function apply(ev: TrackerEvent) {
   const { settings } = store.data;
+  const prev = store.data.state;
   store.data.state = reduce(store.data.state, ev, {
     trackTabletUses: settings.trackTabletUses,
     repeatCosts: settings.repeatCosts,
@@ -67,6 +69,7 @@ function apply(ev: TrackerEvent) {
   });
   store.save();
   push();
+  autoStashOnEvent(prev, ev);
 }
 
 // ---------- Client.txt ----------
@@ -205,12 +208,20 @@ async function readStashTab() {
  * Pulls public tabs from the trade site (when an account is set), re-prices every saved tab
  * and records the total for the history chart.
  */
-async function refreshStash(fullCheck = false) {
-  if (status.stashBusy) return;
-  await refreshPrices();
+/** Reads the public tabs once; concurrent callers share the same request. Returns whether it worked. */
+let syncing: Promise<boolean> | undefined;
+function syncTradeOnce(fullCheck = false, auto = false): Promise<boolean> {
+  syncing ??= doSyncTrade(fullCheck, auto).finally(() => (syncing = undefined));
+  return syncing;
+}
+
+async function doSyncTrade(fullCheck: boolean, auto: boolean): Promise<boolean> {
   const account = store.data.settings.tradeAccount.trim();
-  if (account) {
+  if (!account) return false;
+  let ok = false;
+  {
     status.stashBusy = true;
+    if (auto) status.stashMessage = { at: Date.now(), ok: true, text: "Otomatik stash okuması…" };
     push();
     try {
       const { tabs, truncated, seen } = await syncTradeTabs(store.data.settings.league, account, store.data.prices, USER_AGENT, (text) => {
@@ -233,16 +244,117 @@ async function refreshStash(fullCheck = false) {
           ? `Trade: ${tabs.length} public sekme, ${items} item okundu.${truncated ? " Bir sekmede 100'den fazla item var, fazlası okunamadı; o sekmeyi ikiye böl." : ""}`
           : "Trade sitesinde bu hesapta ~price 990-999 divine fiyatlı public sekme bulunamadı. Kurulum adımlarına bak; trade sitesi değişiklikleri birkaç dakika gecikmeyle görür.",
       };
+      ok = tabs.length > 0;
     } catch (e) {
       status.stashMessage = { at: Date.now(), ok: false, text: (e as Error).message };
     }
     status.stashBusy = false;
   }
+  store.save();
+  push();
+  return ok;
+}
+
+async function refreshStash(fullCheck = false) {
+  await refreshPrices();
+  const ok = await syncTradeOnce(fullCheck);
+  // A manual refresh in the hideout also closes the map that was just finished.
+  if (ok) closeLastRun(stashQty(store.data.stash?.tabs ?? []));
   const stash = store.data.stash ?? emptyStash();
   if (stash.tabs.length) {
     store.data.stash = { ...stash, history: [...stash.history, { ts: Date.now(), div: stashValueDiv(stash, store.data.prices) }].slice(-500) };
     store.save();
   }
+  push();
+}
+
+// ---------- Automatic loot from stash readings ----------
+// Each map gets a "before" reading taken while inside it (the stash cannot change in a map, and
+// waiting a bit lets the trade site catch up with what was stashed just before). The next reading
+// after the map ends (entering the next map, or idling in the hideout) closes it: the difference
+// is that map's loot and what it used up.
+const HIDEOUT_IDLE_MS = Number(process.env.POE2T_IDLE_MS) || 4 * 60 * 1000;
+let beforeTimer: NodeJS.Timeout | undefined;
+let idleTimer: NodeJS.Timeout | undefined;
+
+const autoEnabled = () => store.data.settings.autoStash && !!store.data.settings.tradeAccount.trim();
+
+function autoStashOnEvent(prev: TrackerState, ev: TrackerEvent) {
+  if (ev.type !== "areaGenerated" || !autoEnabled()) return;
+  const now = store.data.state;
+  const snaps = (store.data.stashSnaps ??= {});
+  if (now.location.kind === "map") {
+    clearTimeout(idleTimer);
+    const id = now.activeRunId;
+    if (id && id !== prev.activeRunId) {
+      clearTimeout(beforeTimer);
+      const delay = store.data.settings.autoStashDelaySec * 1000;
+      beforeTimer = setTimeout(() => void takeBefore(id), delay);
+      status.autoStash = { runId: id, dueAt: Date.now() + delay };
+      push();
+    }
+    return;
+  }
+  if (prev.location.kind === "map" && prev.activeRunId) {
+    // Left the map before the delayed reading: read now, before anything gets stashed.
+    const id = prev.activeRunId;
+    if (!snaps[id]) {
+      clearTimeout(beforeTimer);
+      void takeBefore(id);
+    }
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => void idleClose(), HIDEOUT_IDLE_MS);
+  }
+}
+
+async function readStashQty(): Promise<Qty | undefined> {
+  await refreshPrices();
+  return (await syncTradeOnce(false, true)) ? stashQty(store.data.stash?.tabs ?? []) : undefined;
+}
+
+async function takeBefore(runId: string) {
+  const qty = await readStashQty();
+  if (!qty) return;
+  const snaps = (store.data.stashSnaps ??= {});
+  snaps[runId] = { ts: Date.now(), qty };
+  const priceOfQty = (q: Qty) => Object.entries(q).reduce((s, [n, c]) => s + c * (store.data.prices?.divByName[n] ?? 0), 0);
+  status.autoStash = { runId, beforeAt: Date.now(), beforeDiv: priceOfQty(qty) };
+  // Keep the last 40 readings; older runs are either closed or never will be.
+  const keep = new Set(store.data.state.runs.slice(-40).map((r) => r.id));
+  for (const k of Object.keys(snaps)) if (!keep.has(k)) delete snaps[k];
+  const runs = store.data.state.runs;
+  const i = runs.findIndex((r) => r.id === runId);
+  const prevRun = i > 0 ? runs[i - 1] : undefined;
+  const gap = store.data.settings.sessionGapMin * 60_000;
+  if (prevRun && !prevRun.stashLoot && snaps[prevRun.id] && runs[i]!.startedAt - (prevRun.endedAt ?? prevRun.startedAt) <= gap) {
+    closeRun(prevRun.id, snaps[prevRun.id]!, qty);
+  }
+  store.save();
+}
+
+async function idleClose() {
+  if (store.data.state.location.kind === "map") return;
+  const qty = await readStashQty();
+  if (qty) closeLastRun(qty);
+}
+
+function closeLastRun(qty: Qty) {
+  const { state } = store.data;
+  const last = state.runs[state.runs.length - 1];
+  const before = last && store.data.stashSnaps?.[last.id];
+  if (!last || !before || last.stashLoot || state.location.kind === "map") return;
+  closeRun(last.id, before, qty);
+}
+
+function closeRun(runId: string, before: { ts: number; qty: Qty }, after: Qty) {
+  const loot = toStashLoot(diffQty(before.qty, after), store.data.prices, before.ts, Date.now());
+  apply({ type: "setStashLoot", runId, stashLoot: loot });
+  const run = store.data.state.runs.find((r) => r.id === runId);
+  status.stashMessage = {
+    at: Date.now(),
+    ok: true,
+    text: `${run?.areaName ?? "Map"}: stash farkı +${loot.gainDiv.toFixed(2)} div${loot.spentDiv ? `, harcanan ${loot.spentDiv.toFixed(2)} div` : ""}.`,
+  };
   push();
 }
 

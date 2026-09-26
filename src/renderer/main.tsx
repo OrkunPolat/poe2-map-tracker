@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { Overlay } from "./Overlay";
+import "@fontsource-variable/inter";
 import "./styles.css";
 
 const isOverlay = location.hash === "#overlay";

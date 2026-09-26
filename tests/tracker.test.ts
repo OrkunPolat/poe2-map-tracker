@@ -234,3 +234,24 @@ describe("price trends", () => {
     expect(trends.get("Ritual")).toBeCloseTo(-10); // half the value fell 20%, half flat
   });
 });
+
+describe("automatic stash diff", () => {
+  it("turns two stash readings into map loot and spending, without double counting juice", async () => {
+    const { diffQty, toStashLoot, stashQty } = await import("../src/shared/stashDiff");
+    const { runValueDiv, runCostDiv } = await import("../src/shared/stats");
+    const tab = (items: Array<[string, number]>) => ({ id: "t", label: "t", capturedAt: 0, screenshot: "", source: "trade" as const, items: items.map(([name, qty]) => ({ name, qty })) });
+    // Entered the map with 50 div and 2 omens; after stashing the loot: 53 div, 1 omen (one used).
+    const before = stashQty([tab([["Divine Orb", 50], ["Omen of Light", 2]])]);
+    const after = stashQty([tab([["Divine Orb", 53], ["Omen of Light", 1], ["Chaos Orb", 8]])]);
+    const prices = { league: "x", fetchedAt: 0, divByName: { "Divine Orb": 1, "Omen of Light": 7.5, "Chaos Orb": 0.125 } };
+    const loot = toStashLoot(diffQty(before, after), prices, 1, 2);
+    expect(loot.gainDiv).toBe(4);
+    expect(loot.spentDiv).toBe(7.5);
+    const run = {
+      id: "r", startedAt: 0, areaId: "", areaName: "", tablets: [], loot: [], deaths: 0, mapTimeMs: 0, screenshots: [], note: "",
+      costs: [{ name: "Omen of Light", qty: 1, unitDiv: 7.5 }], stashLoot: loot,
+    };
+    expect(runValueDiv(run)).toBe(4);
+    expect(runCostDiv(run)).toBe(7.5); // the omen typed in as juice is the same one the diff saw
+  });
+});

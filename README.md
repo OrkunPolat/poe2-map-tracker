@@ -3,17 +3,17 @@
 </p>
 
 <p align="center">
-  <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/OrkunPolat/poe2-map-tracker?style=for-the-badge&color=c8a45c&labelColor=1c1712&label=s%C3%BCr%C3%BCm" alt="Sürüm"></a>
-  <img src="https://img.shields.io/badge/Windows-x64-c8a45c?style=for-the-badge&labelColor=1c1712&logo=windows&logoColor=c8a45c" alt="Windows">
-  <img src="https://img.shields.io/badge/Path_of_Exile_2-0.5.5-c8a45c?style=for-the-badge&labelColor=1c1712" alt="PoE2 0.5.5">
-  <img src="https://img.shields.io/badge/ToS-uyumlu-6fbf73?style=for-the-badge&labelColor=1c1712" alt="ToS uyumlu">
+  <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/OrkunPolat/poe2-map-tracker?style=for-the-badge&color=7c6cf5&labelColor=141419&label=s%C3%BCr%C3%BCm" alt="Sürüm"></a>
+  <img src="https://img.shields.io/badge/Windows-x64-7c6cf5?style=for-the-badge&labelColor=141419&logo=windows&logoColor=7c6cf5" alt="Windows">
+  <img src="https://img.shields.io/badge/Path_of_Exile_2-0.5.5-7c6cf5?style=for-the-badge&labelColor=141419" alt="PoE2 0.5.5">
+  <img src="https://img.shields.io/badge/ToS-uyumlu-6fbf73?style=for-the-badge&labelColor=141419" alt="ToS uyumlu">
 </p>
 
 <p align="center">
   <a href="../../releases/latest"><b>⬇️ İndir (portable .exe)</b></a> ·
   <a href="#-nasıl-çalışır">Nasıl çalışır</a> ·
   <a href="#%EF%B8%8F-kısayollar">Kısayollar</a> ·
-  <a href="#-i̇statistik">İstatistik</a>
+  <a href="#-analiz">Analiz</a>
 </p>
 
 ---
@@ -31,6 +31,7 @@ Her map'e **hangi waystone ve tabletlerle** girdiğini, **süreyi**, **ölümler
 | 🗺️ **Otomatik map takibi** | Map'e giriş/çıkış, area level, süre ve ölümler `Client.txt`'ten gelir |
 | 🪨 **Waystone & tablet** | `Ctrl+Alt+C` ile Rarity, Pack Size, Monster Effectiveness ve tablet türleri kaydedilir |
 | 💰 **Loot & değerli item** | Currency butonları + unique'ler için elle Divine değeri (ör. `20` Mageblood) |
+| 🔁 **Otomatik loot** | Map'e girince stash okunur, sonraki okumayla farkı o map'in kazancı olur; elle giriş gerekmez |
 | 🧾 **Tablet maliyeti** | "3 tablet 20 div, 10 kullanım" gir; map başına maliyet ve net kâr otomatik |
 | 🧪 **Juice maliyeti** | Farm'ına göre poe.ninja'nın en pahalı 10 item'ı: Ritual → omen'ler, Abyss → abyss currency'leri, Breach → catalyst'ler… |
 | ⏱️ **Gerçek saatlik** | Oturum bazlı div/saat: hideout, trade ve craft süresi de dahil |
@@ -53,7 +54,7 @@ Her map'e **hangi waystone ve tabletlerle** girdiğini, **süreyi**, **ölümler
 1. **Hazırlık** (hideout'ta): Waystone'un ve tabletlerin üstüne gelip `Ctrl+Alt+C` yap. "Sonraki map hazırlığı" kartına düşerler.
 2. **Maliyetler:** Tabletlerin altına toplam fiyatı ve kullanım sayısını gir, **Uygula**. **Map maliyeti (juice)** kısmında farm'ının en pahalı item'larına tıklayarak omen, splinter vb. ekle ("Her map'te tekrarla" açıksa her map'e aynı juice yazılır).
 3. **Map'e gir:** Otomatik algılanır. Hideout'a gidip aynı map'e dönersen aynı kayıt devam eder.
-4. **Loot gir:** Butonlara tıkla ya da değerli item'ı Divine değeriyle ekle.
+4. **Loot:** Hesap adını girdiysen otomatik: map'e girdikten ~2,5 dk sonra stash okunur, sonraki map'e girince (ya da hideout'ta 4 dk bekleyince) aradaki fark o map'in kazancı olarak yazılır; harcadığın omen/splinter'lar da düşer. Hesap bağlı değilse butonlarla elle girersin.
 5. **Sonuç:** Geçmiş'te tablo, İstatistik'te karşılaştırmalar, Ayarlar'dan Excel için CSV.
 
 ## ⌨️ Kısayollar
@@ -83,63 +84,43 @@ Sağ üstte duran küçük panel:
 
 <br clear="right">
 
-## 📊 İstatistik
+## 📊 Analiz
 
 Her tabloda map sayısı, ortalama loot, ortalama maliyet, **net/map**, ortalama süre ve **net/saat** var.
 
-**Oturumlar** sekmesi 30 dakikadan uzun aralarla ayrılan farm oturumlarını gösterir. Buradaki "gerçek net/saat" hideout ve trade süresini de sayar; map içi süreye göre hesaplanandan genelde düşüktür ama asıl kazancın budur. **Map** sekmesi hangi map'lerin daha çok kazandırdığını gösterir.
-
 <details open>
-<summary><b>Farm karşılaştırması</b> (Expedition, Breach…)</summary>
+<summary><b>Oturumlar</b> (gerçek div/saat; satıra tıkla, paylaşılabilir özet kartı)</summary>
+<br>
+<img src="docs/screenshots/oturumlar.png" alt="Oturumlar" width="100%">
+</details>
+
+<details>
+<summary><b>Farm</b> (Expedition, Breach… ve 3 vs 4 tablet)</summary>
 <br>
 <img src="docs/screenshots/farm.png" alt="Farm" width="100%">
 </details>
 
 <details>
-<summary><b>3 vs 4 tablet</b> (city map'ler 4 tablet alır)</summary>
-<br>
-<img src="docs/screenshots/tablet-sayisi.png" alt="3 vs 4 tablet" width="100%">
-</details>
-
-<details>
-<summary><b>Saatlik</b></summary>
-<br>
-<img src="docs/screenshots/saatlik.png" alt="Saatlik" width="100%">
-</details>
-
-<details>
-<summary><b>Waystone</b> (Rarity, Pack Size, Monster Effectiveness aralıkları)</summary>
-<br>
-<img src="docs/screenshots/waystone.png" alt="Waystone" width="100%">
-</details>
-
-<details>
-<summary><b>Geçmiş</b> (tüm map'ler)</summary>
+<summary><b>Geçmiş ve gün çizelgesi</b></summary>
 <br>
 <img src="docs/screenshots/gecmis.png" alt="Geçmiş" width="100%">
+<img src="docs/screenshots/gun.png" alt="Gün çizelgesi" width="100%">
 </details>
 
-## 🏦 Stash
-
-İlk açılıştaki **kurulum sihirbazı** önerilen sekme adlarını kopyalanabilir şekilde verir ve **Kontrol et** ile public sekmelerini tarar: isimsiz sekme, aynı fiyatı kullanan iki sekme, yanlış para birimi, adıyla içeriği uyuşmayan sekme ve eksik farm sekmeleri ayrı ayrı gösterilir. Her **Yenile**'de bu kontrol tekrar yapılır.
-
-**Otomatik (önerilen, PoE Overlay yöntemi):** Okumak istediğin sekmeyi **Public** yap ve adını fiyat + isim koy: `~price 991 divine Expedition`, `~price 992 divine Ritual`, `~price 993 divine Abyss`… (her sekmeye farklı sayı, 990-999 arası; sondaki isim uygulamada sekme adı olur). Stash ekranına hesap adını (`İsim#1234`) gir ve **⟳ Yenile**'ye bas. Uygulama trade sitesinden o sekmelerdeki bütün item'ları ve stack sayılarını okur; gem ve unique'ler dahil. Merchant's Tab kullanma, orada item'lar anında satılabilir.
-
-**Ekrandan:** Oyunda özel bir stash sekmesini aç, <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd> bas. Uygulama ekranın sol yarısının görüntüsünü alır:
-
-- Item'ları **ikonlarından** tanır (poe.ninja ikonlarıyla karşılaştırarak, sekme düzeninden bağımsız)
-- Stack sayılarını **OCR** ile okur; okuyamadığı sayıyı kırmızı işaretler, elle girersin
-- **⟳ Yenile** tüm okunmuş sekmeleri güncel fiyatla yeniden hesaplar ve değeri geçmişe kaydeder
-
-> [!NOTE]
-> Sekmeleri uygulama kendisi değiştiremez: oyuna tıklama göndermek GGG kurallarına aykırı. Her sekme için bir kez tuşa basman yeterli. İlk okumada ~500 ikon ve OCR dil dosyası indirilir (internet gerekir). Gem, Map ve Unique sekmeleri desteklenmiyor.
+<details>
+<summary><b>Stash</b> (değer, 7 günlük fiyat trendi)</summary>
+<br>
+<img src="docs/screenshots/stash.png" alt="Stash" width="100%">
+</details>
 
 ## ⚠️ Waystone tehlike uyarısı
 
-**Waystone** sekmesinde poe2db'den alınan bütün waystone modları var (tier aralıkları ve verdikleri ödüllerle). Build'in için tehlikeli olanları işaretle:
+**Ayarlar → Waystone uyarıları**'nda poe2db'den alınan bütün waystone modları var (tier aralıkları ve verdikleri ödüllerle). Build'in için tehlikeli olanları işaretle:
 
 - Waystone'a <kbd>Ctrl</kbd>+<kbd>C</kbd> yaptığında işaretli mod varsa hazırlık kartında ve overlay'de kırmızı uyarı çıkar
 - İşaretli modlardan bir **stash arama kodu** üretilir (`"!..."`); waystone sekmesinde <kbd>Ctrl</kbd>+<kbd>F</kbd> ile yapıştırınca tehlikeli waystone'lar söner
+
+<img src="docs/screenshots/waystone.png" alt="Waystone uyarıları" width="100%">
 
 ## 🔒 Güvenli mi?
 

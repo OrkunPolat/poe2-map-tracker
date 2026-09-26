@@ -176,6 +176,9 @@ export function reduce(state: TrackerState, ev: TrackerEvent, opts: TrackerOptio
     case "removeDrop":
       return updateRun(state, ev.runId, (r) => ({ ...r, drops: (r.drops ?? []).filter((d) => d.id !== ev.dropId) }));
 
+    case "setStashLoot":
+      return updateRun(state, ev.runId, (r) => ({ ...r, stashLoot: ev.stashLoot }));
+
     case "setNote":
       return updateRun(state, ev.runId, (r) => ({ ...r, note: ev.note }));
 

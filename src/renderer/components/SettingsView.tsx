@@ -2,163 +2,259 @@ import { useState } from "react";
 import type { Snapshot } from "../../shared/ipc";
 import type { Settings } from "../../shared/types";
 import { api } from "../api";
+import { PageHead } from "../App";
+import { TabCheckList } from "./Onboarding";
+import { TradeSetup } from "./StashView";
+import { WaystoneView } from "./WaystoneView";
+
+const SECTIONS = [
+  ["general", "Genel"],
+  ["stash", "Stash"],
+  ["waystone", "Waystone uyarıları"],
+  ["overlay", "Overlay & kısayollar"],
+  ["loot", "Loot & maliyet"],
+  ["data", "Veri & güncelleme"],
+  ["debug", "Debug"],
+] as const;
+type Section = (typeof SECTIONS)[number][0];
 
 export function SettingsView({ snap, onWizard }: { snap: Snapshot; onWizard: () => void }) {
-  const { settings, status, prices } = snap;
-  const set = (patch: Partial<Settings>) => void api().setSettings(patch);
-  const [hotkey, setHotkey] = useState(settings.screenshotHotkey);
-  const [favs, setFavs] = useState(settings.favoriteCurrencies.join("\n"));
-  const [charName, setCharName] = useState(settings.characterName);
-  const [ovKey, setOvKey] = useState(settings.overlayHotkey);
-  const [stashKey, setStashKey] = useState(settings.stashHotkey);
-
+  const [section, setSection] = useState<Section>(() => {
+    const legacy = location.hash.includes("waystone") ? "waystone" : location.hash.includes("debug") ? "debug" : undefined;
+    return (SECTIONS.find(([s]) => location.hash.endsWith(`:${s}`))?.[0] ?? legacy ?? "general") as Section;
+  });
   return (
-    <div className="settings">
-      <section>
-        <h3>Kurulum</h3>
-        <button onClick={onWizard}>Kurulum sihirbazını aç</button>
-      </section>
-      <section>
-        <h3>Client.txt</h3>
+    <>
+      <PageHead title="Ayarlar">
+        <button onClick={onWizard}>Kurulum sihirbazı</button>
+      </PageHead>
+      <div className="settings-layout">
+        <nav className="subnav">
+          {SECTIONS.map(([id, label]) => (
+            <button key={id} className={section === id ? "on" : ""} onClick={() => setSection(id)}>
+              {label}
+            </button>
+          ))}
+        </nav>
+        <div className="settings-body">
+          {section === "general" && <General snap={snap} />}
+          {section === "stash" && <StashSettings snap={snap} />}
+          {section === "waystone" && <WaystoneView snap={snap} />}
+          {section === "overlay" && <OverlaySettings snap={snap} />}
+          {section === "loot" && <LootSettings snap={snap} />}
+          {section === "data" && <DataSettings snap={snap} />}
+          {section === "debug" && <DebugView snap={snap} />}
+        </div>
+      </div>
+    </>
+  );
+}
+
+const useSet = () => (patch: Partial<Settings>) => void api().setSettings(patch);
+
+function Field({ label, hint, children }: { label: string; hint?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="field">
+      <div className="field-label">{label}</div>
+      <div className="field-body">
+        {children}
+        {hint && <p className="hint">{hint}</p>}
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ checked, onChange, children }: { checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode }) {
+  return (
+    <label className="toggle">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span className="switch" />
+      <span>{children}</span>
+    </label>
+  );
+}
+
+function General({ snap }: { snap: Snapshot }) {
+  const { settings, status, prices } = snap;
+  const set = useSet();
+  const [charName, setCharName] = useState(settings.characterName);
+  return (
+    <section className="card">
+      <Field label="Client.txt" hint="Genelde: Steam → steamapps\common\Path of Exile 2\logs\Client.txt">
         <p className={status.logFound ? "ok" : "warn"}>
-          {status.logFound ? "Bağlı: " : "Bulunamadı. "}
+          {status.logFound ? "Bağlı · " : "Bulunamadı · "}
           <code>{status.logPath ?? "otomatik tespit başarısız"}</code>
         </p>
         <div className="row">
           <button onClick={() => void api().pickLogFile()}>Dosya seç…</button>
-          {settings.logPath && <button onClick={() => set({ logPath: "" })}>Otomatik tespite dön</button>}
+          {settings.logPath && <button onClick={() => set({ logPath: "" })}>Otomatik tespit</button>}
         </div>
-        <p className="hint">Genelde: Steam → steamapps\common\Path of Exile 2\logs\Client.txt</p>
-      </section>
-
-      <section>
-        <h3>Karakter adı</h3>
-        <input value={charName} onChange={(e) => setCharName(e.target.value)} onBlur={() => set({ characterName: charName })} placeholder="Boş: party'deki herkesin ölümü sayılır" />
-      </section>
-
-      <section>
-        <h3>Fiyatlar (poe.ninja)</h3>
+      </Field>
+      <Field label="Lig (fiyatlar)" hint={prices ? `poe.ninja · ${Object.keys(prices.divByName).length} item · ${new Date(prices.fetchedAt).toLocaleTimeString("tr-TR")}` : status.priceError}>
         <div className="row">
           <select value={settings.league} onChange={(e) => set({ league: e.target.value })}>
             {(status.leagues.length ? status.leagues : [settings.league]).map((l) => (
               <option key={l}>{l}</option>
             ))}
           </select>
-          <button onClick={() => void api().refreshPrices()}>Şimdi güncelle</button>
+          <button onClick={() => void api().refreshPrices()}>Fiyatları güncelle</button>
         </div>
-        <p className="hint">
-          {prices ? `${Object.keys(prices.divByName).length} item, ${new Date(prices.fetchedAt).toLocaleTimeString("tr-TR")}` : "Henüz fiyat yok"}
-          {status.priceError && <span className="warn"> · Hata: {status.priceError}</span>}
-        </p>
-      </section>
-
-      <section>
-        <h3>Screenshot kısayolu</h3>
+      </Field>
+      <Field label="Karakter adı" hint="Boş bırakırsan party'deki herkesin ölümü sayılır.">
+        <input value={charName} onChange={(e) => setCharName(e.target.value)} onBlur={() => set({ characterName: charName })} placeholder="Karakter adı" />
+      </Field>
+      <Field label="Oturum arası" hint="Bundan uzun ara yeni farm oturumu sayılır.">
         <div className="row">
-          <input value={hotkey} onChange={(e) => setHotkey(e.target.value)} />
-          <button onClick={() => set({ screenshotHotkey: hotkey })}>Kaydet</button>
-          <span className={status.hotkeyRegistered ? "ok" : "warn"}>{status.hotkeyRegistered ? "aktif" : "kayıtlı değil"}</span>
+          <input className="qty" type="number" min={5} value={settings.sessionGapMin} onChange={(e) => set({ sessionGapMin: Math.max(5, Number(e.target.value) || 30) })} />
+          <span className="muted">dakika</span>
         </div>
-        <p className="hint">Electron formatı: Ctrl+Shift+S, F9, Alt+F10… Map içindeyken çekilen görüntü o map'e, hideout'tayken sonraki map'e eklenir.</p>
-      </section>
+      </Field>
+    </section>
+  );
+}
 
-      <section>
-        <h3>Oyun üstü panel (overlay)</h3>
-        <label className="check">
-          <input type="checkbox" checked={settings.overlayEnabled} onChange={(e) => set({ overlayEnabled: e.target.checked })} />
+function StashSettings({ snap }: { snap: Snapshot }) {
+  const { settings, status } = snap;
+  const set = useSet();
+  const [stashKey, setStashKey] = useState(settings.stashHotkey);
+  return (
+    <>
+      <TradeSetup account={settings.tradeAccount} />
+      <section className="card">
+        <Field
+          label="Otomatik loot"
+          hint={`Map'e girdikten ${settings.autoStashDelaySec} sn sonra stash okunur; bir sonraki okumayla farkı o map'in kazancı olur. Trade sitesi birkaç dakika gecikmeli; kazançlar bir sonraki map'e kayıyorsa süreyi artır.`}
+        >
+          <Toggle checked={settings.autoStash} onChange={(v) => set({ autoStash: v })}>
+            Her map'te stash'i otomatik oku, kazancı stash farkından hesapla
+          </Toggle>
+          <div className="row">
+            <span className="muted">Okuma gecikmesi</span>
+            <input
+              className="qty"
+              type="number"
+              min={30}
+              value={settings.autoStashDelaySec}
+              onChange={(e) => set({ autoStashDelaySec: Math.max(30, Number(e.target.value) || 150) })}
+            />
+            <span className="muted">sn</span>
+          </div>
+        </Field>
+        <Field label="Sekme kontrolü">
+          <button disabled={!settings.tradeAccount || status.stashBusy} onClick={() => void api().checkTabSetup()}>
+            {status.stashBusy ? "Kontrol ediliyor…" : "Public sekmeleri kontrol et"}
+          </button>
+          {status.tabCheck && <TabCheckList issues={status.tabCheck.issues} />}
+        </Field>
+        <Field label="Ekrandan okuma" hint="Trade yerine: oyunda özel stash sekmesi açıkken bas; ekranın sol yarısı okunur.">
+          <div className="row">
+            <input value={stashKey} onChange={(e) => setStashKey(e.target.value)} />
+            <button onClick={() => set({ stashHotkey: stashKey })}>Kaydet</button>
+            <HotkeyState ok={status.stashHotkeyRegistered} />
+          </div>
+        </Field>
+      </section>
+    </>
+  );
+}
+
+function HotkeyState({ ok }: { ok: boolean }) {
+  return <span className={`pill ${ok ? "ok" : "warn"}`}>{ok ? "aktif" : "kayıtlı değil"}</span>;
+}
+
+function OverlaySettings({ snap }: { snap: Snapshot }) {
+  const { settings, status } = snap;
+  const set = useSet();
+  const [ovKey, setOvKey] = useState(settings.overlayHotkey);
+  const [shotKey, setShotKey] = useState(settings.screenshotHotkey);
+  return (
+    <section className="card">
+      <Field label="Overlay" hint="Oyun Windowed Fullscreen modda olmalı. Panel sürüklenerek taşınır, yeri hatırlanır.">
+        <Toggle checked={settings.overlayEnabled} onChange={(v) => set({ overlayEnabled: v })}>
           Oyunun üstünde küçük paneli göster
-        </label>
+        </Toggle>
         <div className="row">
-          <span>Aç/kapa kısayolu</span>
+          <span className="muted">Opaklık</span>
+          <input type="range" min={0.4} max={1} step={0.05} value={settings.overlayOpacity} onChange={(e) => set({ overlayOpacity: Number(e.target.value) })} />
+          <button onClick={() => set({ overlayPos: undefined })}>Sağ üste al</button>
+        </div>
+      </Field>
+      <Field label="Overlay aç/kapa">
+        <div className="row">
           <input value={ovKey} onChange={(e) => setOvKey(e.target.value)} />
           <button onClick={() => set({ overlayHotkey: ovKey })}>Kaydet</button>
-          <span className={status.overlayHotkeyRegistered ? "ok" : "warn"}>{status.overlayHotkeyRegistered ? "aktif" : "kayıtlı değil"}</span>
+          <HotkeyState ok={status.overlayHotkeyRegistered} />
         </div>
+      </Field>
+      <Field label="Ekran görüntüsü" hint="Map içindeyken o map'e, hideout'tayken sonraki map'e eklenir.">
         <div className="row">
-          <span>Opaklık</span>
-          <input
-            type="range" min={0.4} max={1} step={0.05} value={settings.overlayOpacity}
-            onChange={(e) => set({ overlayOpacity: Number(e.target.value) })}
-          />
-          <button onClick={() => set({ overlayPos: undefined })}>Sağ üste geri al</button>
+          <input value={shotKey} onChange={(e) => setShotKey(e.target.value)} />
+          <button onClick={() => set({ screenshotHotkey: shotKey })}>Kaydet</button>
+          <HotkeyState ok={status.hotkeyRegistered} />
         </div>
-        <p className="hint">Panel sürüklenerek taşınabilir, yeri hatırlanır. Oyun Windowed Fullscreen (borderless) modda olmalı; exclusive fullscreen'de görünmez. İlk 4 loot butonu panelde de var.</p>
-      </section>
+      </Field>
+      <Field label="Pencere">
+        <Toggle checked={settings.alwaysOnTop} onChange={(v) => set({ alwaysOnTop: v })}>
+          Ana pencere her zaman üstte
+        </Toggle>
+      </Field>
+    </section>
+  );
+}
 
-      <section>
-        <h3>Stash okuma kısayolu</h3>
-        <div className="row">
-          <input value={stashKey} onChange={(e) => setStashKey(e.target.value)} />
-          <button onClick={() => set({ stashHotkey: stashKey })}>Kaydet</button>
-          <span className={status.stashHotkeyRegistered ? "ok" : "warn"}>{status.stashHotkeyRegistered ? "aktif" : "kayıtlı değil"}</span>
-        </div>
-        <p className="hint">Oyunda özel stash sekmesi açıkken bas; sekme okunup Stash ekranına eklenir.</p>
-      </section>
-
-      <section>
-        <h3>Loot butonları</h3>
-        <textarea rows={8} value={favs} onChange={(e) => setFavs(e.target.value)} />
+function LootSettings({ snap }: { snap: Snapshot }) {
+  const { settings } = snap;
+  const set = useSet();
+  const [favs, setFavs] = useState(settings.favoriteCurrencies.join("\n"));
+  return (
+    <section className="card">
+      <Field label="Loot butonları" hint="Elle girişte gösterilen item'lar; her satıra bir tane, oyundaki İngilizce adıyla.">
+        <textarea rows={7} value={favs} onChange={(e) => setFavs(e.target.value)} />
         <button onClick={() => set({ favoriteCurrencies: favs.split("\n").map((s) => s.trim()).filter(Boolean) })}>Kaydet</button>
-        <p className="hint">Her satıra bir item, oyundaki İngilizce adıyla (poe.ninja ile eşleşmeli).</p>
-      </section>
+      </Field>
+      <Field label="Tabletler">
+        <Toggle checked={settings.trackTabletUses} onChange={(v) => set({ trackTabletUses: v })}>
+          Tabletler map'ten sonra kalsın, kullanım hakları azalsın
+        </Toggle>
+        <div className="row">
+          <span className="muted">Varsayılan kullanım hakkı</span>
+          <input className="qty" type="number" min={1} value={settings.defaultTabletUses} onChange={(e) => set({ defaultTabletUses: Math.max(1, Number(e.target.value) || 1) })} />
+        </div>
+      </Field>
+      <Field label="Juice">
+        <Toggle checked={settings.repeatCosts} onChange={(v) => set({ repeatCosts: v })}>
+          Aynı juice'u her map'e tekrar yaz
+        </Toggle>
+      </Field>
+      <Field label="Pano">
+        <Toggle checked={settings.captureCurrencyFromClipboard} onChange={(v) => set({ captureCurrencyFromClipboard: v })}>
+          Currency stack'ine Ctrl+C yapınca son map'e ekle
+        </Toggle>
+      </Field>
+    </section>
+  );
+}
 
-      <section>
-        <h3>Davranış</h3>
-        <label className="check">
-          <input type="checkbox" checked={settings.trackTabletUses} onChange={(e) => set({ trackTabletUses: e.target.checked })} />
-          Tabletler map'ten sonra hazırlıkta kalsın, kullanım hakları azalsın (bitince düşer)
-        </label>
-        <label className="check">
-          Oturum arası (dk): bundan uzun ara yeni farm oturumu sayılır
-          <input
-            className="qty"
-            type="number"
-            min={5}
-            value={settings.sessionGapMin}
-            onChange={(e) => set({ sessionGapMin: Math.max(5, Number(e.target.value) || 30) })}
-          />
-        </label>
-        <label className="check">
-          Varsayılan tablet kullanım hakkı
-          <input
-            className="qty"
-            type="number"
-            min={1}
-            value={settings.defaultTabletUses}
-            onChange={(e) => set({ defaultTabletUses: Math.max(1, Number(e.target.value) || 1) })}
-          />
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={settings.captureCurrencyFromClipboard} onChange={(e) => set({ captureCurrencyFromClipboard: e.target.checked })} />
-          Currency stack'ine Ctrl+C yapınca son map'in loot'una ekle (stack'in tamamı eklenir)
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={settings.alwaysOnTop} onChange={(e) => set({ alwaysOnTop: e.target.checked })} />
-          Pencere her zaman üstte (oyun Windowed Fullscreen olmalı)
-        </label>
-      </section>
-
-      <section>
-        <h3>Güncelleme</h3>
+function DataSettings({ snap }: { snap: Snapshot }) {
+  const { status } = snap;
+  return (
+    <section className="card">
+      <Field label="Güncelleme" hint="Açılışta ve 6 saatte bir kontrol edilir; güncelleme verilerini korur.">
         <div className="row">
           <span>
             Sürüm <b>v{status.version}</b>
           </span>
-          <button onClick={() => void api().checkUpdate()}>Güncellemeleri kontrol et</button>
+          <button onClick={() => void api().checkUpdate()}>Kontrol et</button>
           {status.update ? (
             <button className="primary" onClick={() => void api().installUpdate()}>
               v{status.update.version} yükle
             </button>
           ) : (
-            status.updateCheckedAt && <span className="ok">Güncel</span>
+            status.updateCheckedAt && <span className="pill ok">Güncel</span>
           )}
         </div>
-        {status.updateError && <p className="warn">{status.updateError}</p>}
-        <p className="hint">Açılışta ve 6 saatte bir GitHub'a bakar. Güncelle deyince yeni exe inip eskisinin yerine geçer, uygulama yeniden açılır; verilerin korunur.</p>
-      </section>
-
-      <section>
-        <h3>Veri</h3>
+      </Field>
+      <Field label="Veri" hint="Tüm kayıtlar veri klasöründeki tracker-data.json dosyasında.">
         <div className="row">
           <button onClick={() => void api().openDataFolder()}>Veri klasörünü aç</button>
           <button
@@ -167,32 +263,29 @@ export function SettingsView({ snap, onWizard }: { snap: Snapshot; onWizard: () 
               if (p) alert(`Kaydedildi: ${p}`);
             }}
           >
-            CSV dışa aktar (Excel)
+            CSV dışa aktar
           </button>
         </div>
-      </section>
-    </div>
+      </Field>
+    </section>
   );
 }
 
-export function DebugView({ snap }: { snap: Snapshot }) {
+function DebugView({ snap }: { snap: Snapshot }) {
   const { debug, state } = snap;
   return (
-    <div className="settings">
-      <section>
-        <h3>Konum</h3>
+    <section className="card">
+      <Field label="Konum">
         <code>
           {state.location.kind} · {state.location.areaId || "–"} · aktif run: {state.activeRunId ?? "yok"}
         </code>
-      </section>
-      <section>
-        <h3>Son tanınan log satırları</h3>
+      </Field>
+      <Field label="Son log satırları">
         <pre>{debug.recentLog.join("\n") || "Henüz yok. Oyunda bölge değiştirince burada satırlar görünmeli."}</pre>
-      </section>
-      <section>
-        <h3>Son pano ({debug.lastClipboard?.kind ?? "–"})</h3>
+      </Field>
+      <Field label={`Son pano (${debug.lastClipboard?.kind ?? "–"})`}>
         <pre>{debug.lastClipboard?.text ?? "Oyunda bir item'ın üstünde Ctrl+C yap."}</pre>
-      </section>
-    </div>
+      </Field>
+    </section>
   );
 }

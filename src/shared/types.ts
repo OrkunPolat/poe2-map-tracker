@@ -101,6 +101,17 @@ export interface Run {
   costDiv?: number;
   /** Other consumables spent on this map. */
   costs?: CostEntry[];
+  /**
+   * Loot measured automatically: stash read (trade site) while in this map, compared with the
+   * next reading after it. Positive qty came in, negative was spent.
+   */
+  stashLoot?: {
+    items: Array<{ name: string; qty: number; unitDiv?: number }>;
+    gainDiv: number;
+    spentDiv: number;
+    beforeAt: number;
+    afterAt: number;
+  };
   /** Optional for data saved before this field existed. */
   drops?: ValuableDrop[];
   deaths: number;
@@ -156,6 +167,10 @@ export interface Settings {
   dangerousMods: string[];
   /** First-run setup finished or skipped. */
   onboarded: boolean;
+  /** Read the stash automatically around each map to measure its loot. */
+  autoStash: boolean;
+  /** Seconds after entering a map before the stash is read (trade site lags behind the game). */
+  autoStashDelaySec: number;
 }
 
 export interface PriceTable {
@@ -211,6 +226,7 @@ export type TrackerEvent =
   | { type: "addLoot"; runId: string; name: string; qty: number; unitDiv?: number }
   | { type: "setLootQty"; runId: string; name: string; qty: number }
   | { type: "setNote"; runId: string; note: string }
+  | { type: "setStashLoot"; runId: string; stashLoot: NonNullable<Run["stashLoot"]> }
   | { type: "addDrop"; runId: string; drop: ValuableDrop }
   | { type: "removeDrop"; runId: string; dropId: string }
   | { type: "finishRun"; ts: number }

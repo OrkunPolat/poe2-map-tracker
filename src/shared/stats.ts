@@ -3,7 +3,7 @@ import type { PriceTable, Run } from "./types";
 /** Uses the price recorded with the loot; falls back to today's price for items added without one. */
 export function runValueDiv(run: Run, prices?: PriceTable): number {
   const loot = run.loot.reduce((sum, l) => sum + l.qty * (l.unitDiv ?? prices?.divByName[l.name] ?? 0), 0);
-  return loot + dropsValueDiv(run);
+  return loot + dropsValueDiv(run) + (run.stashLoot?.gainDiv ?? 0);
 }
 
 export function dropsValueDiv(run: Run): number {
@@ -26,8 +26,15 @@ export function tabletSetupKey(run: Run): string {
 }
 
 export const consumablesDiv = (run: Pick<Run, "costs">) => (run.costs ?? []).reduce((s, c) => s + c.qty * c.unitDiv, 0);
-/** Tablet share plus consumables. */
-export const runCostDiv = (run: Run) => (run.costDiv ?? 0) + consumablesDiv(run);
+/**
+ * Tablet share plus consumables. When the stash diff already saw an item leave the stash, the
+ * hand-entered juice line for that item is not counted a second time.
+ */
+export const runCostDiv = (run: Run) => {
+  const seenSpent = new Set((run.stashLoot?.items ?? []).filter((i) => i.qty < 0).map((i) => i.name));
+  const manual = (run.costs ?? []).filter((c) => !seenSpent.has(c.name)).reduce((s, c) => s + c.qty * c.unitDiv, 0);
+  return (run.costDiv ?? 0) + manual + (run.stashLoot?.spentDiv ?? 0);
+};
 export const runNetDiv = (run: Run, prices?: PriceTable) => runValueDiv(run, prices) - runCostDiv(run);
 
 /** Farm = the mechanic the tablets push; ties (2 Delirium + 2 Expedition) name both. */

@@ -1,24 +1,20 @@
 import { useState } from "react";
 import { groupSessions, sessionNetPerHour } from "../../shared/sessions";
 import {
-  byAvgNet, farmKey, formatDuration, hourKey, statBucket, summarize, tabletCountKey, tabletSetupKey, type GroupSummary,
+  byAvgNet, farmKey, formatDuration, statBucket, summarize, tabletCountKey, type GroupSummary,
 } from "../../shared/stats";
 import type { PriceTable, Run, WaystoneStats } from "../../shared/types";
 import { fmtDiv } from "../api";
 import { farmTrends } from "../../shared/trends";
 import { Trend } from "./Trend";
-import { DayTimeline } from "./DayTimeline";
+import { PageHead } from "../App";
 import { SessionCard } from "./SessionCard";
 import type { Session } from "../../shared/sessions";
 
 const VIEWS = [
   ["session", "Oturumlar"],
-  ["day", "Gün"],
   ["farm", "Farm"],
   ["map", "Map"],
-  ["count", "3 vs 4 tablet"],
-  ["setup", "Tablet setup"],
-  ["hour", "Saatlik"],
   ["waystone", "Waystone"],
 ] as const;
 type View = (typeof VIEWS)[number][0];
@@ -26,10 +22,8 @@ type View = (typeof VIEWS)[number][0];
 export function StatsView({ runs, prices, gapMin }: { runs: Run[]; prices?: PriceTable; gapMin: number }) {
   // "#tab=stats:count" opens a sub-view directly (preview screenshots).
   const [view, setView] = useState<View>(() => VIEWS.find(([id]) => location.hash.endsWith(`:${id}`))?.[0] ?? "session");
-  if (runs.length === 0) return <p className="empty">İstatistik için önce birkaç map koş.</p>;
-
-  return (
-    <div>
+  const head = (
+    <PageHead title="Analiz" sub={`${runs.length} map`}>
       <div className="seg">
         {VIEWS.map(([id, label]) => (
           <button key={id} className={view === id ? "on" : ""} onClick={() => setView(id)}>
@@ -37,9 +31,21 @@ export function StatsView({ runs, prices, gapMin }: { runs: Run[]; prices?: Pric
           </button>
         ))}
       </div>
+    </PageHead>
+  );
+  if (runs.length === 0)
+    return (
+      <>
+        {head}
+        <div className="empty">Analiz için önce birkaç map koş.</div>
+      </>
+    );
+
+  return (
+    <div>
+      {head}
 
       {view === "session" && <SessionTable runs={runs} prices={prices} gapMin={gapMin} />}
-      {view === "day" && <DayTimeline runs={runs} prices={prices} />}
       {view === "map" && (
         <SummaryTable
           title="Map"
@@ -55,19 +61,11 @@ export function StatsView({ runs, prices, gapMin }: { runs: Run[]; prices?: Pric
           hint="Farm, en çok kullanılan tablet türüne göre belirlenir (eşitse ikisi birden). Trend: bu farm'dan düşen loot'un fiyatı son 7 günde ne kadar değişti."
         />
       )}
-      {view === "count" && (
+      {view === "farm" && (
         <SummaryTable
           title="Tablet sayısı"
           rows={summarize(runs, tabletCountKey, prices, (r) => r.tablets.length).sort((a, b) => a.order - b.order)}
-          hint="City map'lere 4, diğerlerine 3 tabletle girilebiliyor; bu tablo ikisini karşılaştırır."
-        />
-      )}
-      {view === "setup" && <SummaryTable title="Tablet setup" rows={summarize(runs, tabletSetupKey, prices).sort(byAvgNet)} />}
-      {view === "hour" && (
-        <SummaryTable
-          title="Saat"
-          rows={summarize(runs, hourKey, prices, (r) => r.startedAt).sort((a, b) => b.order - a.order)}
-          hint="Map'ler başladıkları saate göre gruplanır."
+          hint="City map'lere 4, diğerlerine 3 tabletle girilebiliyor."
         />
       )}
       {view === "waystone" && (

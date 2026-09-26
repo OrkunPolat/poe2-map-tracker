@@ -1,202 +1,298 @@
 import { useState } from "react";
 import type { Snapshot } from "../shared/ipc";
-import { formatDuration, hourKeyAt, runCostDiv, runNetDiv, runValueDiv, tabletSetupKey } from "../shared/stats";
 import { currentSession, groupSessions, sessionNetPerHour } from "../shared/sessions";
+import { formatDuration, runCostDiv, runNetDiv, runValueDiv, tabletSetupKey } from "../shared/stats";
 import { liveMapTime } from "../shared/tracker";
-import { api, fmtDiv, useNow, useSnapshot } from "./api";
-import { CostEditor } from "./components/CostEditor";
-import { LootPanel } from "./components/LootPanel";
-import { RunsTable } from "./components/RunsTable";
-import { DebugView, SettingsView } from "./components/SettingsView";
-import { StashView } from "./components/StashView";
-import { WaystoneView } from "./components/WaystoneView";
+import type { Run } from "../shared/types";
+import { api, fmtDiv, fmtEx, fmtValue, useNow, useSnapshot } from "./api";
 import { dangerLines } from "./danger";
-import { Onboarding } from "./components/Onboarding";
-import { StatsView } from "./components/StatsView";
+import { CostEditor } from "./components/CostEditor";
+import { DayTimeline } from "./components/DayTimeline";
+import { Icon } from "./components/Icons";
 import { Screenshots, TabletCard, WaystoneCard } from "./components/Items";
+import { LootPanel } from "./components/LootPanel";
+import { Onboarding } from "./components/Onboarding";
+import { RunsTable } from "./components/RunsTable";
+import { SettingsView } from "./components/SettingsView";
+import { StashView } from "./components/StashView";
+import { StatsView } from "./components/StatsView";
 
-const TABS = [
-  ["track", "Takip"],
-  ["runs", "Geçmiş"],
-  ["stats", "İstatistik"],
-  ["stash", "Stash"],
-  ["waystone", "Waystone"],
-  ["settings", "Ayarlar"],
-  ["debug", "Debug"],
+const PAGES = [
+  ["track", "Map", "map"],
+  ["history", "Geçmiş", "history"],
+  ["stats", "Analiz", "chart"],
+  ["stash", "Stash", "box"],
+  ["settings", "Ayarlar", "settings"],
 ] as const;
-type Tab = (typeof TABS)[number][0];
+type Page = (typeof PAGES)[number][0];
 
-const LOCATION_LABEL = { map: "Map", hideout: "Hideout", town: "Kasaba", other: "Diğer", unknown: "Bilinmiyor" };
+const LOCATION_LABEL = { map: "Map'te", hideout: "Hideout'ta", town: "Kasabada", other: "Başka bölgede", unknown: "Bilinmiyor" };
 
 export function App() {
   const snap = useSnapshot();
   const now = useNow();
-  // "#tab=runs" opens a specific tab (used by preview screenshots).
   const [wizard, setWizard] = useState<boolean | undefined>(undefined);
-  const [tab, setTab] = useState<Tab>(() => (TABS.find(([id]) => location.hash.split(":")[0] === `#tab=${id}`)?.[0] ?? "track"));
+  // "#tab=stats:farm" opens a page (and sub view) directly; used for preview screenshots.
+  const [page, setPage] = useState<Page>(() => {
+    const id = /tab=(\w+)/.exec(location.hash)?.[1];
+    const legacy: Record<string, Page> = { runs: "history", waystone: "settings", debug: "settings" };
+    return (PAGES.find(([p]) => p === id)?.[0] ?? legacy[id ?? ""] ?? "track") as Page;
+  });
   if (!snap) return <div className="loading">Yükleniyor…</div>;
   const { state, prices, status, settings } = snap;
-  // First launch opens the setup wizard once; Settings can reopen it.
   const showWizard = wizard ?? ((!settings.onboarded && !location.hash.includes("tab=")) || location.hash.includes("wizard="));
 
   return (
     <div className="app">
       {showWizard && <Onboarding snap={snap} onClose={() => setWizard(false)} />}
-      <header>
-        <div className="brand">PoE2 Map Tracker</div>
+      <aside className="sidebar">
+        <div className="brand">
+          <span className="brand-mark">
+            <Icon name="sparkle" size={16} />
+          </span>
+          <div>
+            <b>Map Tracker</b>
+            <small>Path of Exile 2</small>
+          </div>
+        </div>
         <nav>
-          {TABS.map(([id, label]) => (
-            <button key={id} className={tab === id ? "on" : ""} onClick={() => setTab(id)}>
+          {PAGES.map(([id, label, icon]) => (
+            <button key={id} className={page === id ? "on" : ""} onClick={() => setPage(id)}>
+              <Icon name={icon} />
               {label}
             </button>
           ))}
         </nav>
-        <div className="status">
-          <span className={`dot ${status.logFound ? "ok" : "bad"}`} title={status.logPath}>
-            Log
-          </span>
-          <span>
-            {LOCATION_LABEL[state.location.kind]}
-            {state.location.kind === "map" && `: ${state.location.areaName}`}
-          </span>
-          <span className={prices ? "" : "warn"}>
-            {prices ? `${prices.league} · 1 div = ${Math.round(prices.exPerDiv ?? 0)} ex` : status.priceError ? "Fiyat hatası" : "Fiyat yok"}
-          </span>
-        </div>
-      </header>
-
-      {status.update && (
-        <div className="banner update">
-          Yeni sürüm <b>v{status.update.version}</b> hazır (şu an v{status.version}).
-          {status.updateProgress != null ? (
-            <span> İndiriliyor… %{Math.round(status.updateProgress * 100)}</span>
-          ) : (
-            <button className="primary" onClick={() => void api().installUpdate()}>
-              {status.update.mode === "manual" ? "İndirme sayfasını aç" : "Güncelle ve yeniden başlat"}
+        <div className="side-foot">
+          {status.update && (
+            <button className="update-pill" onClick={() => void api().installUpdate()} disabled={status.updateProgress != null}>
+              <Icon name="download" size={15} />
+              {status.updateProgress != null ? `İndiriliyor %${Math.round(status.updateProgress * 100)}` : `v${status.update.version} yükle`}
             </button>
           )}
-          {status.updateError && <span className="warn"> {status.updateError}</span>}
+          <div className="side-status">
+            <span className={`dot ${status.logFound ? "ok" : "bad"}`} />
+            {status.logFound ? LOCATION_LABEL[state.location.kind] : "Log bulunamadı"}
+          </div>
+          <div className="side-status muted">{prices ? `${prices.league} · 1 div = ${Math.round(prices.exPerDiv ?? 0)} ex` : "Fiyat yok"}</div>
+          <div className="side-status muted">v{status.version}</div>
         </div>
-      )}
-      {!status.logFound && (
-        <div className="banner">
-          Client.txt bulunamadı. Map takibi için <button onClick={() => setTab("settings")}>Ayarlar</button>'dan log dosyasını seç.
-        </div>
-      )}
+      </aside>
 
       <main>
-        {tab === "track" && <TrackView snap={snap} now={now} />}
-        {tab === "runs" && <RunsTable state={state} prices={prices} favorites={settings.favoriteCurrencies} now={now} />}
-        {tab === "stats" && <StatsView runs={state.runs} prices={prices} gapMin={settings.sessionGapMin} />}
-        {tab === "stash" && <StashView snap={snap} />}
-        {tab === "waystone" && <WaystoneView snap={snap} />}
-        {tab === "settings" && <SettingsView snap={snap} onWizard={() => setWizard(true)} />}
-        {tab === "debug" && <DebugView snap={snap} />}
+        {!status.logFound && (
+          <div className="callout warn">
+            <Icon name="alert" size={16} /> Client.txt bulunamadı; map takibi çalışmaz.
+            <button onClick={() => setPage("settings")}>Ayarlar'da seç</button>
+          </div>
+        )}
+        {status.updateError && <div className="callout warn">Güncelleme hatası: {status.updateError}</div>}
+        {page === "track" && <TrackView snap={snap} now={now} />}
+        {page === "history" && <HistoryView snap={snap} now={now} />}
+        {page === "stats" && <StatsView runs={state.runs} prices={prices} gapMin={settings.sessionGapMin} />}
+        {page === "stash" && <StashView snap={snap} onSetup={() => setPage("settings")} />}
+        {page === "settings" && <SettingsView snap={snap} onWizard={() => setWizard(true)} />}
       </main>
     </div>
+  );
+}
+
+export function PageHead({ title, sub, children }: { title: string; sub?: string; children?: React.ReactNode }) {
+  return (
+    <div className="page-head">
+      <div>
+        <h1>{title}</h1>
+        {sub && <p className="muted">{sub}</p>}
+      </div>
+      <div className="row">{children}</div>
+    </div>
+  );
+}
+
+function HistoryView({ snap, now }: { snap: Snapshot; now: number }) {
+  const [view, setView] = useState<"list" | "day">(() => (location.hash.includes(":day") ? "day" : "list"));
+  return (
+    <>
+      <PageHead title="Geçmiş" sub={`${snap.state.runs.length} map kayıtlı`}>
+        <div className="seg">
+          <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}>
+            Liste
+          </button>
+          <button className={view === "day" ? "on" : ""} onClick={() => setView("day")}>
+            Gün
+          </button>
+        </div>
+      </PageHead>
+      {view === "list" ? (
+        <RunsTable state={snap.state} prices={snap.prices} favorites={snap.settings.favoriteCurrencies} now={now} />
+      ) : (
+        <DayTimeline runs={snap.state.runs} prices={snap.prices} />
+      )}
+    </>
   );
 }
 
 function TrackView({ snap, now }: { snap: Snapshot; now: number }) {
   const { state, prices, settings } = snap;
   const { pending } = state;
-  const current = state.runs.find((r) => r.id === state.activeRunId) ?? state.runs[state.runs.length - 1];
-  const todayStart = new Date(new Date(now).toDateString()).getTime();
-  const today = state.runs.filter((r) => r.startedAt >= todayStart);
-  const todayDiv = today.reduce((s, r) => s + runValueDiv(r, prices), 0);
-  const todayNet = today.reduce((s, r) => s + runNetDiv(r, prices), 0);
-  const thisHour = state.runs.filter((r) => hourKeyAt(r.startedAt) === hourKeyAt(now));
-  const hourNet = thisHour.reduce((s, r) => s + runNetDiv(r, prices), 0);
+  const active = state.runs.find((r) => r.id === state.activeRunId);
+  const current = active ?? state.runs[state.runs.length - 1];
   const gapMs = settings.sessionGapMin * 60_000;
-  const session = currentSession(groupSessions(state.runs, gapMs, prices), now, gapMs, !!state.activeRunId);
+  const session = currentSession(groupSessions(state.runs, gapMs, prices), now, gapMs, !!active);
+  const auto = settings.autoStash && !!settings.tradeAccount;
+  // The map before the current one is where the automatic loot shows up once it is closed.
+  const idx = current ? state.runs.findIndex((r) => r.id === current.id) : -1;
+  const previous = idx > 0 ? state.runs[idx - 1] : undefined;
 
   return (
-    <div className="track">
-      <section className="card">
-        <div className="card-head">
-          <h2>Sonraki map hazırlığı</h2>
-          <div className="row">
-            {current && current.tablets.length > 0 && pending.tablets.length === 0 && (
-              <button onClick={() => void api().dispatch({ type: "reuseTablets", runId: current.id })}>Son tabletleri kullan</button>
-            )}
-            {(pending.waystone || pending.tablets.length > 0) && (
-              <button onClick={() => void api().dispatch({ type: "clearPending" })}>Temizle</button>
-            )}
-          </div>
-        </div>
-        <p className="hint">
-          Oyunda waystone ve tabletlerin üstüne gelip <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> yap (ya da <kbd>Ctrl</kbd>+<kbd>C</kbd>). Map'e girdiğinde bu setup o map'e bağlanır.
-        </p>
-        <h4>Waystone</h4>
-        {pending.waystone ? <WaystoneCard w={pending.waystone} danger={dangerLines(snap, pending.waystone)} /> : <p className="muted">Henüz kopyalanmadı</p>}
-        <h4>Tabletler ({pending.tablets.length})</h4>
-        {pending.tablets.length === 0 && <p className="muted">Henüz kopyalanmadı</p>}
-        {pending.tablets.map((t, i) => (
-          <TabletCard key={i} t={t} onRemove={() => void api().dispatch({ type: "removePendingTablet", index: i })} />
-        ))}
-        {pending.tablets.length > 0 && <TabletCostForm count={pending.tablets.length} defaultUses={settings.defaultTabletUses} />}
-        <CostEditor costs={pending.costs ?? []} tabletTypes={pending.tablets.map((t) => t.type)} prices={prices} settings={settings} />
-        <Screenshots files={pending.screenshots} />
-      </section>
-
-      <section className="card">
-        {current ? (
-          <>
-            <div className="card-head">
-              <h2>
-                {current.id === state.activeRunId ? "Aktif map" : "Son map"}: {current.areaName}
-                <span className="muted"> · lvl {current.areaLevel ?? "?"}</span>
-              </h2>
-              {current.id === state.activeRunId && (
-                <button onClick={() => void api().dispatch({ type: "finishRun" })} title="Aynı map'e tekrar girilmeyecekse">
-                  Map'i bitir
-                </button>
-              )}
-            </div>
-            <div className="kpis">
-              <div>
-                <span>Süre</span>
-                <b>{formatDuration(liveMapTime(state, current, now))}</b>
-              </div>
-              <div>
-                <span>Ölüm</span>
-                <b>{current.deaths}</b>
-              </div>
-              <div>
-                <span>Maliyet</span>
-                <b>{runCostDiv(current) ? fmtDiv(runCostDiv(current)) : "–"}</b>
-              </div>
-              <div>
-                <span>Net</span>
-                <b className={runNetDiv(current, prices) < 0 ? "warn" : "gold"}>{fmtDiv(runNetDiv(current, prices))}</b>
-              </div>
-            </div>
-            <p className="muted setup-line">
-              {current.waystone ? `T${current.waystone.stats.tier ?? "?"} waystone` : "Waystone kaydı yok"} ·{" "}
-              {current.tablets.length ? tabletSetupKey(current) : "tabletsiz"}
-            </p>
-            <LootPanel run={current} favorites={settings.favoriteCurrencies} prices={prices} />
-          </>
-        ) : (
-          <p className="empty">Map'e girdiğinde burada süre, ölüm ve loot girişi görünür.</p>
+    <>
+      <PageHead
+        title={active ? active.areaName : "Hideout"}
+        sub={active ? `lvl ${active.areaLevel ?? "?"} · ${active.tablets.length ? tabletSetupKey(active) : "tabletsiz"}` : "Sıradaki map'i hazırla"}
+      >
+        {active && (
+          <button onClick={() => void api().dispatch({ type: "finishRun" })} title="Aynı map'e tekrar girilmeyecekse">
+            Map'i bitir
+          </button>
         )}
-        <div className="today">
-          {session && (
-            <div>
-              Oturum: <b>{formatDuration(now - session.start)}</b> · {session.runs.length} map · net <b>{fmtDiv(session.netDiv)} div</b> ·{" "}
-              <b className="gold">{fmtDiv(sessionNetPerHour(session, now) ?? 0)} div/saat</b> <span className="muted">(gerçek)</span>
-            </div>
-          )}
-          <div>
-            Bu saat ({new Date(now).getHours()}:00): <b>{thisHour.length}</b> map · net <b>{fmtDiv(hourNet)} div</b>
-            {thisHour.length > 0 && <span className="muted"> · ort. {fmtDiv(hourNet / thisHour.length)}/map</span>}
-          </div>
-          <div>
-            Bugün: <b>{today.length}</b> map · loot <b>{fmtDiv(todayDiv)}</b> · net <b>{fmtDiv(todayNet)} div</b>
-            {today.length > 0 && <span className="muted"> · ort. {fmtDiv(todayNet / today.length)}/map</span>}
-          </div>
+      </PageHead>
+
+      {session && (
+        <div className="stat-strip">
+          <Stat label="Oturum" value={formatDuration(now - session.start)} sub={`${session.runs.length} map`} />
+          <Stat label="Oturum net" value={`${fmtDiv(session.netDiv)} div`} sub={fmtEx(session.netDiv, prices?.exPerDiv)} tone={session.netDiv >= 0 ? "pos" : "neg"} />
+          <Stat label="Gerçek saatlik" value={`${fmtDiv(sessionNetPerHour(session, now) ?? 0)} div`} sub="hideout dahil" accent />
+          <Stat label="Map başına" value={`${fmtDiv(session.netDiv / session.runs.length)} div`} sub="ortalama net" />
         </div>
-      </section>
+      )}
+
+      <div className="track">
+        <section className="card">
+          {current ? (
+            <>
+              <div className="card-head">
+                <h2>{active ? "Bu map" : `Son map · ${current.areaName}`}</h2>
+                <span className="muted">{current.waystone ? `T${current.waystone.stats.tier ?? "?"} waystone` : ""}</span>
+              </div>
+              <div className="kpis">
+                <Stat label="Süre" value={formatDuration(liveMapTime(state, current, now))} />
+                <Stat label="Ölüm" value={String(current.deaths)} tone={current.deaths ? "neg" : undefined} />
+                <Stat label="Loot" value={fmtDiv(runValueDiv(current, prices))} />
+                <Stat
+                  label="Net"
+                  value={fmtDiv(runNetDiv(current, prices))}
+                  tone={runNetDiv(current, prices) >= 0 ? "pos" : "neg"}
+                  sub={runCostDiv(current) ? `maliyet ${fmtDiv(runCostDiv(current))}` : undefined}
+                />
+              </div>
+
+              {auto && <AutoLootStatus snap={snap} now={now} current={current} previous={previous} />}
+
+              {auto ? (
+                <details className="fold">
+                  <summary>Elle ekle (stash'e koymadıkların, unique'ler)</summary>
+                  <LootPanel run={current} favorites={settings.favoriteCurrencies} prices={prices} />
+                </details>
+              ) : (
+                <>
+                  <LootPanel run={current} favorites={settings.favoriteCurrencies} prices={prices} />
+                  <p className="hint">Ayarlar → Stash'te hesap adını girersen loot'u elle girmen gerekmez; her map'in kazancı stash farkından otomatik hesaplanır.</p>
+                </>
+              )}
+            </>
+          ) : (
+            <div className="empty">Map'e girdiğinde süre, ölüm ve kazanç burada görünür.</div>
+          )}
+        </section>
+
+        <section className="card">
+          <div className="card-head">
+            <h2>Sıradaki map</h2>
+            <div className="row">
+              {current && current.tablets.length > 0 && pending.tablets.length === 0 && (
+                <button onClick={() => void api().dispatch({ type: "reuseTablets", runId: current.id })}>Son tabletler</button>
+              )}
+              {(pending.waystone || pending.tablets.length > 0) && <button onClick={() => void api().dispatch({ type: "clearPending" })}>Temizle</button>}
+            </div>
+          </div>
+          <p className="hint">
+            Waystone ve tabletlerin üstünde <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd>. Map'e girince bu setup o map'e bağlanır.
+          </p>
+          <div className="label">Waystone</div>
+          {pending.waystone ? <WaystoneCard w={pending.waystone} danger={dangerLines(snap, pending.waystone)} /> : <div className="placeholder">Kopyalanmadı</div>}
+          <div className="label">Tabletler · {pending.tablets.length}</div>
+          {pending.tablets.length === 0 && <div className="placeholder">Kopyalanmadı</div>}
+          {pending.tablets.map((t, i) => (
+            <TabletCard key={i} t={t} compact onRemove={() => void api().dispatch({ type: "removePendingTablet", index: i })} />
+          ))}
+          <details className="fold">
+            <summary>Maliyetler (tablet fiyatı, juice)</summary>
+            {pending.tablets.length > 0 && <TabletCostForm count={pending.tablets.length} defaultUses={settings.defaultTabletUses} />}
+            <CostEditor costs={pending.costs ?? []} tabletTypes={pending.tablets.map((t) => t.type)} prices={prices} settings={settings} />
+          </details>
+          <Screenshots files={pending.screenshots} />
+        </section>
+      </div>
+    </>
+  );
+}
+
+/** Where the automatic stash diff stands for this map, and what the previous map brought in. */
+function AutoLootStatus({ snap, now, current, previous }: { snap: Snapshot; now: number; current: Run; previous?: Run }) {
+  const { status, prices, state } = snap;
+  const a = status.autoStash?.runId === current.id ? status.autoStash : undefined;
+  const inMap = current.id === state.activeRunId && state.location.kind === "map";
+  const shown = current.stashLoot ? current : previous?.stashLoot ? previous : undefined;
+  return (
+    <div className="auto-loot">
+      <div className="auto-head">
+        <Icon name="refresh" size={15} />
+        {current.stashLoot
+          ? "Bu map'in kazancı stash farkından hesaplandı."
+          : a?.beforeAt
+            ? `Girişte stash okundu (${fmtDiv(a.beforeDiv ?? 0)} div). Kazanç sonraki map'e girince ya da hideout'ta 4 dk bekleyince hesaplanır.`
+            : a?.dueAt && inMap
+              ? `Stash ${Math.max(0, Math.ceil((a.dueAt - now) / 1000))} sn sonra okunacak.`
+              : status.stashBusy
+                ? "Stash okunuyor…"
+                : "Map'e girince stash otomatik okunur."}
+      </div>
+      {shown?.stashLoot && (
+        <>
+          <div className="label">
+            {shown.id === current.id ? "Bu map" : `Önceki map · ${shown.areaName}`} <span className="pos">+{fmtDiv(shown.stashLoot.gainDiv)} div</span>
+            {shown.stashLoot.spentDiv > 0 && <span className="neg"> · harcanan {fmtDiv(shown.stashLoot.spentDiv)} div</span>}
+          </div>
+          {shown.stashLoot.items.length === 0 ? (
+            <div className="placeholder">Stash'te değişiklik yok</div>
+          ) : (
+            <table className="loot-table">
+              <tbody>
+                {shown.stashLoot.items.slice(0, 10).map((it) => (
+                  <tr key={it.name}>
+                    <td>{it.name}</td>
+                    <td className={`num ${it.qty > 0 ? "pos" : "neg"}`}>
+                      {it.qty > 0 ? "+" : ""}
+                      {it.qty}
+                    </td>
+                    <td className="num muted">{it.unitDiv != null ? fmtValue(Math.abs(it.qty) * it.unitDiv, prices?.exPerDiv) : "fiyat yok"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+export function Stat({ label, value, sub, tone, accent }: { label: string; value: string; sub?: string; tone?: "pos" | "neg"; accent?: boolean }) {
+  return (
+    <div className={`stat ${accent ? "accent" : ""}`}>
+      <span>{label}</span>
+      <b className={tone ?? ""}>{value}</b>
+      {sub && <small>{sub}</small>}
     </div>
   );
 }
@@ -209,12 +305,12 @@ function TabletCostForm({ count, defaultUses }: { count: number; defaultUses: nu
   const n = Math.max(1, Math.round(Number(uses) || 0));
   const valid = total.trim() !== "" && Number.isFinite(div) && div >= 0;
   return (
-    <div className="cost-form">
-      <h4>Tablet maliyeti</h4>
+    <div className="sub-block">
+      <div className="label">Tablet fiyatı</div>
       <div className="row">
         <span>{count} tablet toplam</span>
         <input className="div-input" inputMode="decimal" placeholder="20" value={total} onChange={(e) => setTotal(e.target.value)} />
-        <span>div, her biri</span>
+        <span>div · her biri</span>
         <input className="qty" type="number" min={1} value={uses} onChange={(e) => setUses(e.target.value)} />
         <span>kullanım</span>
         <button

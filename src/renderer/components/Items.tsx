@@ -58,7 +58,7 @@ export function TabletCard({ t, onRemove, compact }: { t: TabletInfo; onRemove?:
           </button>
         )}
       </div>
-      {!compact && (
+      {!compact && t.mods.length > 0 && (
         <ul className="mods">
           {t.mods.map((m, i) => (
             <li key={i}>{m}</li>

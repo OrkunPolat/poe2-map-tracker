@@ -6,8 +6,6 @@ import { api, fmtDiv } from "../api";
 import { LootPanel } from "./LootPanel";
 import { Screenshots, TabletCard, WaystoneCard } from "./Items";
 
-const pct = (v?: number) => (v == null ? "–" : `${v}%`);
-
 export function RunsTable({
   state, prices, favorites, now,
 }: { state: TrackerState; prices?: PriceTable; favorites: string[]; now: number }) {
@@ -25,18 +23,12 @@ export function RunsTable({
           <tr>
             <th>Tarih</th>
             <th>Map</th>
-            <th>Lvl</th>
             <th>T</th>
-            <th>Rarity</th>
-            <th>Pack</th>
-            <th>M.Eff</th>
-            <th>Magic</th>
-            <th>Rare</th>
-            <th>Tabletler</th>
+            <th>Farm</th>
             <th>Süre</th>
             <th>Ölüm</th>
             <th>Loot</th>
-            <th className="num">Loot</th>
+            <th className="num">Değer</th>
             <th className="num">Net</th>
           </tr>
         </thead>
@@ -49,13 +41,7 @@ export function RunsTable({
                 <tr className={`${isOpen ? "open" : ""} ${r.id === state.activeRunId ? "active" : ""}`} onClick={() => setOpen(isOpen ? undefined : r.id)}>
                   <td>{new Date(r.startedAt).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
                   <td>{r.areaName}</td>
-                  <td>{r.areaLevel ?? "–"}</td>
-                  <td>{w?.tier ?? "–"}</td>
-                  <td>{pct(w?.itemRarity)}</td>
-                  <td>{pct(w?.packSize)}</td>
-                  <td>{pct(w?.monsterEffectiveness)}</td>
-                  <td>{pct(w?.magicMonsters)}</td>
-                  <td>{pct(w?.rareMonsters)}</td>
+                  <td className="muted">{w?.tier ?? "–"}</td>
                   <td>{tabletSetupKey(r)}</td>
                   <td>{formatDuration(liveMapTime(state, r, now))}</td>
                   <td>{r.deaths || ""}</td>
@@ -65,16 +51,22 @@ export function RunsTable({
                         {d.name}{" "}
                       </span>
                     ))}
-                    {r.loot.map((l) => `${l.qty} ${l.name.replace(/ Orb$/, "")}`).join(", ")}
+                    {[
+                      ...(r.stashLoot?.items ?? []).filter((i) => i.qty > 0).map((i) => ({ name: i.name, qty: i.qty })),
+                      ...r.loot,
+                    ]
+                      .map((l) => `${l.qty} ${l.name.replace(/ Orb$/, "")}`)
+                      .join(", ")}
+                    {r.stashLoot && <span className="pill tiny">stash</span>}
                   </td>
-                  <td className="num">{fmtDiv(runValueDiv(r, prices))}</td>
+                  <td className="num">{r.stashLoot || r.loot.length || r.drops?.length ? fmtDiv(runValueDiv(r, prices)) : "–"}</td>
                   <td className="num">
                     <b className={runNetDiv(r, prices) < 0 ? "warn" : ""}>{fmtDiv(runNetDiv(r, prices))}</b>
                   </td>
                 </tr>
                 {isOpen && (
                   <tr className="detail">
-                    <td colSpan={15}>
+                    <td colSpan={9}>
                       <RunDetail run={r} prices={prices} favorites={favorites} />
                     </td>
                   </tr>
@@ -100,7 +92,26 @@ function RunDetail({ run, prices, favorites }: { run: Run; prices?: PriceTable; 
         <Screenshots files={run.screenshots} />
       </div>
       <div>
-        <h4>Loot</h4>
+        {run.stashLoot && (
+          <>
+            <h4>Stash farkı (otomatik)</h4>
+            <table className="loot-table">
+              <tbody>
+                {run.stashLoot.items.map((it) => (
+                  <tr key={it.name}>
+                    <td>{it.name}</td>
+                    <td className={`num ${it.qty > 0 ? "pos" : "neg"}`}>
+                      {it.qty > 0 ? "+" : ""}
+                      {it.qty}
+                    </td>
+                    <td className="num muted">{it.unitDiv != null ? `${fmtDiv(Math.abs(it.qty) * it.unitDiv)} div` : "fiyat yok"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+        <h4>{run.stashLoot ? "Elle eklenen" : "Loot"}</h4>
         <LootPanel run={run} favorites={favorites} prices={prices} />
         <h4>Not</h4>
         <textarea

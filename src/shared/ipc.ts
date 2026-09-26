@@ -28,6 +28,8 @@ export interface Status {
   /** Set while a stash tab is being read. */
   stashBusy?: boolean;
   stashMessage?: { at: number; ok: boolean; text: string };
+  /** Automatic stash reading for the current map: when it is due, or when it happened. */
+  autoStash?: { runId: string; dueAt?: number; beforeAt?: number; beforeDiv?: number };
   /** Result of the last public-tab setup check. */
   tabCheck?: { at: number; full: boolean; issues: import("./tabCheck").TabIssue[] };
   leagues: string[];

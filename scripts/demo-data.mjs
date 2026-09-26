@@ -7,7 +7,7 @@ const dir = process.argv[2];
 if (!dir) throw new Error("usage: node scripts/demo-data.mjs <dir>");
 mkdirSync(dir, { recursive: true });
 
-const P = { "Divine Orb": 1, "Exalted Orb": 0.002, "Chaos Orb": 0.128, "Orb of Annulment": 0.73, "Greater Chaos Orb": 0.387, "Perfect Chaos Orb": 6.8, "Perfect Exalted Orb": 3.09 };
+const P = { "Omen of Light": 7.5, "Divine Orb": 1, "Exalted Orb": 0.002, "Chaos Orb": 0.128, "Orb of Annulment": 0.73, "Greater Chaos Orb": 0.387, "Perfect Chaos Orb": 6.8, "Perfect Exalted Orb": 3.09 };
 const tablet = (type, mods) => ({ type, rarity: "Magic", name: "", baseType: `${type} Precursor Tablet`, itemLevel: 80, mods, raw: type + Math.random() });
 const exp = () => tablet("Expedition", ["17 Maps in Range contain Expedition Encounters", "5% increased Quantity of Items found in your Maps"]);
 const deli = () => tablet("Delirium", ["10 Maps in Range are Delirious", "20% increased Delirium Fog duration"]);
@@ -42,6 +42,16 @@ const runs = maps.map((m, i) => {
     drops: i === 2 ? [{ id: "dd1", name: "Headhunter", valueDiv: 18 }] : i === 6 ? [{ id: "dd2", name: "Spectre (base)", valueDiv: 0.5 }] : [],
     deaths: i === 4 ? 1 : 0, mapTimeMs: (6 + (i % 4)) * 60_000 + i * 7_000, screenshots: [], note: "",
   };
+});
+// Automatic loot from stash readings on most maps (the manual loot stays on the rest).
+runs.forEach((r, i) => {
+  if (i % 3 === 2) return;
+  const items = [["Divine Orb", 2 + (i % 3)], ["Exalted Orb", 60 + i * 5], ["Omen of Light", i % 4 === 0 ? -1 : 0], ["Breach Splinter", 30 + i]].filter(([, q]) => q !== 0)
+    .map(([name, qty]) => ({ name, qty, unitDiv: P[name] ?? (name === "Breach Splinter" ? 0.012 : undefined) }));
+  const gain = items.filter((x) => x.qty > 0).reduce((s, x) => s + x.qty * (x.unitDiv ?? 0), 0);
+  const spent = -items.filter((x) => x.qty < 0).reduce((s, x) => s + x.qty * (x.unitDiv ?? 0), 0);
+  r.stashLoot = { items, gainDiv: gain, spentDiv: spent, beforeAt: r.startedAt + 150000, afterAt: r.startedAt + 800000 };
+  r.loot = [];
 });
 // Last run is the one currently being played.
 const active = runs[runs.length - 1];

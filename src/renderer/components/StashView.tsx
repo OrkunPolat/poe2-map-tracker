@@ -6,6 +6,8 @@ import { api, fmtDiv, fmtEx, fmtValue } from "../api";
 import { TabCheckList } from "./Onboarding";
 import { Trend } from "./Trend";
 import { sellHints } from "../../shared/trends";
+import { PageHead } from "../App";
+import { Icon } from "./Icons";
 
 /** Special tabs worth reading (Map, Gem and Unique tabs are left out on purpose). */
 const EXPECTED = ["Currency", "Essences", "Abyss", "Ritual", "Delirium", "Breach", "Expedition", "Fragments", "Runes", "SoulCores", "Idols"];
@@ -18,7 +20,7 @@ const ago = (ts: number, now: number) => {
   return h < 48 ? `${h} saat önce` : `${Math.round(h / 24)} gün önce`;
 };
 
-export function StashView({ snap }: { snap: Snapshot }) {
+export function StashView({ snap, onSetup }: { snap: Snapshot; onSetup: () => void }) {
   const { stash, prices, status, settings, now } = snap;
   const total = stashValueDiv(stash, prices);
   const last = stash.history[stash.history.length - 1];
@@ -28,57 +30,55 @@ export function StashView({ snap }: { snap: Snapshot }) {
 
   return (
     <div className="stash">
-      <section className="card stash-head">
-        <div>
-          <div className="muted small-caps">Stash değeri</div>
-          <div className="big">
-            {fmtDiv(total)} div <span className="muted">{fmtEx(total, prices?.exPerDiv)}</span>
-          </div>
-          {prev && last && (
-            <div className={last.div >= prev.div ? "ok" : "warn"}>
-              Son yenilemeye göre {last.div >= prev.div ? "+" : ""}
-              {fmtDiv(last.div - prev.div)} div ({ago(prev.ts, now)})
-            </div>
-          )}
+      <PageHead title="Stash" sub={settings.tradeAccount ? `${settings.tradeAccount} · public sekmeler` : "Hesap bağlı değil"}>
+        <button className="primary" disabled={status.stashBusy} onClick={() => void api().stashRefresh()}>
+          <Icon name="refresh" size={15} /> {status.stashBusy ? "Okunuyor…" : "Yenile"}
+        </button>
+      </PageHead>
+
+      {!settings.tradeAccount && (
+        <div className="callout">
+          Stash'ini otomatik okumak için hesap adını gir ve sekmelerini hazırla.
+          <button onClick={onSetup}>Ayarlar → Stash</button>
         </div>
-        <div className="stash-actions">
-          <button className="primary" onClick={() => void api().stashRefresh()}>
-            ⟳ Yenile
-          </button>
-          <p className="hint">
-            {settings.tradeAccount
-              ? "Public sekmeleri trade sitesinden yeniden okur, güncel poe.ninja fiyatıyla hesaplar ve geçmişe kaydeder."
-              : "Tüm okunmuş sekmeleri güncel poe.ninja fiyatıyla yeniden hesaplar ve geçmişe kaydeder."}
-          </p>
+      )}
+
+      <div className="stat-strip">
+        <div className="stat accent">
+          <span>Stash değeri</span>
+          <b>{fmtDiv(total)} div</b>
+          <small>{fmtEx(total, prices?.exPerDiv)}</small>
         </div>
-      </section>
+        <div className="stat">
+          <span>Son yenilemeye göre</span>
+          <b className={prev && last && last.div < prev.div ? "neg" : "pos"}>
+            {prev && last ? `${last.div >= prev.div ? "+" : ""}${fmtDiv(last.div - prev.div)} div` : "–"}
+          </b>
+          <small>{prev ? ago(prev.ts, now) : "henüz karşılaştırma yok"}</small>
+        </div>
+        <div className="stat">
+          <span>Sekme</span>
+          <b>{stash.tabs.length}</b>
+          <small>{stash.tabs.reduce((s, t) => s + t.items.length, 0)} farklı item</small>
+        </div>
+      </div>
+
+      {status.stashMessage && (
+        <p className={`status-line ${status.stashMessage.ok ? "" : "warn"}`}>
+          {status.stashMessage.text} <span className="muted">· {ago(status.stashMessage.at, now)}</span>
+        </p>
+      )}
 
       <SellHints snap={snap} />
 
-      <TradeSetup account={settings.tradeAccount} />
-
       {status.tabCheck && status.tabCheck.issues.some((i) => i.kind !== "ok" && i.kind !== "missing") && (
-        <section className="card how">
-          <b>Sekme kontrolü: düzeltilmesi gerekenler</b>
+        <section className="card">
+          <h3>Sekme kontrolü: düzeltilmesi gerekenler</h3>
           <TabCheckList issues={status.tabCheck.issues.filter((i) => i.kind !== "missing")} />
           <button onClick={() => void api().checkTabSetup()}>Tam kontrol (diğer public sekmeler dahil)</button>
         </section>
       )}
 
-      <section className="card how">
-        <b>Ya da ekrandan oku:</b> oyunda stash'te bir özel sekmeyi aç (Currency, Ritual, Abyss…) ve{" "}
-        <kbd>{settings.stashHotkey}</kbd> bas. Uygulama ekranın sol yarısını okur; item'ları ikonlarından, sayıları OCR ile bulur.
-        <br />
-        <span className="muted">
-          Sekmeleri otomatik değiştiremeyiz: oyuna tıklama göndermek GGG kurallarına aykırı. Her sekme için bir kez tuşa basman yeterli.
-        </span>
-        {status.stashBusy && <div className="gold">Okunuyor…</div>}
-        {status.stashMessage && !status.stashBusy && (
-          <div className={status.stashMessage.ok ? "ok" : "warn"}>
-            {status.stashMessage.text} <span className="muted">({ago(status.stashMessage.at, now)})</span>
-          </div>
-        )}
-      </section>
 
       <div className="stash-grid">
         {[...stash.tabs]
@@ -132,6 +132,9 @@ function TabCard({ tab, prices, now }: { tab: StashTab; prices?: PriceTable; now
               <tr key={it.name} className={it.qty == null ? "unread" : ""}>
                 <td>{it.name}</td>
                 <td>
+                  {trade ? (
+                    <span className="qty-text">{it.qty ?? "?"}</span>
+                  ) : (
                   <input
                     className="qty"
                     disabled={trade}
@@ -144,6 +147,7 @@ function TabCard({ tab, prices, now }: { tab: StashTab; prices?: PriceTable; now
                       void api().stashSetQty(tab.id, it.name, e.target.value === "" ? undefined : Math.max(0, Number(e.target.value)))
                     }
                   />
+                  )}
                 </td>
                 <td className="num muted">
                   {unit != null ? fmtValue(unit, prices?.exPerDiv) : "–"} <Trend change={prices?.changeByName?.[it.name]} />
@@ -162,12 +166,12 @@ function TabCard({ tab, prices, now }: { tab: StashTab; prices?: PriceTable; now
 }
 
 /** Setup for reading public tabs from the trade site (the PoE Overlay method). */
-function TradeSetup({ account }: { account: string }) {
+export function TradeSetup({ account }: { account: string }) {
   const [value, setValue] = useState(account);
   const valid = /^.+#\d{4}$/.test(value.trim()) || value.trim() === "";
   return (
     <section className="card how">
-      <b>Otomatik okuma (trade sitesi üzerinden)</b>
+      <h3>Trade sitesinden okuma</h3>
       <ol className="steps">
         <li>
           Oyunda okumak istediğin sekmeye sağ tık → <b>Public</b> yap. <span className="warn">Merchant's Tab kullanma</span> (orada item'lar anında satılabilir).

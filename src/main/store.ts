@@ -10,6 +10,8 @@ export interface Persisted {
   settings: Settings;
   prices?: PriceTable;
   stash?: StashState;
+  /** Stash readings taken while in a map, keyed by run id (the "before" side of its loot). */
+  stashSnaps?: Record<string, { ts: number; qty: Record<string, number> }>;
   /** Newer waystone mod list fetched from poe2db; the bundled one is used otherwise. */
   waystoneMods?: { fetchedAt: string; families: WaystoneModFamily[] };
 }
@@ -36,6 +38,8 @@ export const DEFAULT_SETTINGS: Settings = {
   tradeAccount: "",
   dangerousMods: [],
   onboarded: false,
+  autoStash: true,
+  autoStashDelaySec: 150,
 };
 
 export class Store {
