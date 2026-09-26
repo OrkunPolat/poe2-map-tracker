@@ -23,9 +23,11 @@ const PRICE_REFRESH_MS = 30 * 60 * 1000;
 protocol.registerSchemesAsPrivileged([{ scheme: "shot", privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 let win: BrowserWindow | null = null;
+let overlay: BrowserWindow | null = null;
+const OVERLAY_WIDTH = 300;
 let store: Store;
 let tail: LogTail | undefined;
-const status: Snapshot["status"] = { logFound: false, hotkeyRegistered: false, leagues: [] };
+const status: Snapshot["status"] = { logFound: false, hotkeyRegistered: false, overlayHotkeyRegistered: false, leagues: [] };
 const debug: Snapshot["debug"] = { recentLog: [] };
 const shotsDir = () => join(app.getPath("userData"), "screenshots");
 
@@ -39,7 +41,9 @@ function push() {
   if (pushTimer) return;
   pushTimer = setTimeout(() => {
     pushTimer = undefined;
-    win?.webContents.send("snapshot", snapshot());
+    const snap = snapshot();
+    win?.webContents.send("snapshot", snap);
+    overlay?.webContents.send("snapshot", snap);
   }, 50);
 }
 
@@ -173,16 +177,86 @@ async function takeScreenshot() {
   apply({ type: "screenshot", ts: Date.now(), file });
 }
 
-function registerHotkey() {
-  globalShortcut.unregisterAll();
-  const key = store.data.settings.screenshotHotkey.trim();
-  status.hotkeyRegistered = false;
-  if (!key) return;
+function tryRegister(accelerator: string, fn: () => void): boolean {
+  if (!accelerator.trim()) return false;
   try {
-    status.hotkeyRegistered = globalShortcut.register(key, () => void takeScreenshot().catch(console.error));
+    return globalShortcut.register(accelerator.trim(), fn);
   } catch {
-    status.hotkeyRegistered = false;
+    return false; // invalid accelerator string
   }
+}
+
+function registerHotkeys() {
+  globalShortcut.unregisterAll();
+  const { settings } = store.data;
+  status.hotkeyRegistered = tryRegister(settings.screenshotHotkey, () => void takeScreenshot().catch(console.error));
+  status.overlayHotkeyRegistered = tryRegister(settings.overlayHotkey, () => {
+    store.data.settings.overlayEnabled = !store.data.settings.overlayEnabled;
+    store.save();
+    syncOverlay();
+    push();
+  });
+}
+
+// ---------- Overlay ----------
+function defaultOverlayPos() {
+  const wa = screen.getPrimaryDisplay().workArea;
+  return { x: wa.x + wa.width - OVERLAY_WIDTH - 16, y: wa.y + 16 };
+}
+
+/** Keep a saved position only if it is still on some display (monitor setups change). */
+function overlayPos() {
+  const saved = store.data.settings.overlayPos;
+  if (saved) {
+    const onScreen = screen.getAllDisplays().some(
+      (d) => saved.x >= d.bounds.x && saved.x < d.bounds.x + d.bounds.width && saved.y >= d.bounds.y && saved.y < d.bounds.y + d.bounds.height,
+    );
+    if (onScreen) return saved;
+  }
+  return defaultOverlayPos();
+}
+
+function createOverlay() {
+  const { x, y } = overlayPos();
+  overlay = new BrowserWindow({
+    x, y,
+    width: OVERLAY_WIDTH,
+    height: 150,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    maximizable: false,
+    minimizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    hasShadow: false,
+    // Clicking the overlay must not pull keyboard focus away from the game.
+    focusable: false,
+    show: false,
+    title: "PoE2 Map Tracker Overlay",
+    webPreferences: { preload: join(__dirname, "preload.cjs"), contextIsolation: true, sandbox: true },
+  });
+  overlay.setAlwaysOnTop(true, "screen-saver");
+  overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  overlay.setOpacity(store.data.settings.overlayOpacity);
+  overlay.on("moved", () => {
+    if (!overlay) return;
+    const [ox, oy] = overlay.getPosition();
+    store.data.settings.overlayPos = { x: ox!, y: oy! };
+    store.save();
+  });
+  overlay.on("closed", () => (overlay = null));
+  overlay.once("ready-to-show", () => overlay?.showInactive());
+  const devUrl = process.env.VITE_DEV_URL;
+  if (devUrl) void overlay.loadURL(`${devUrl}#overlay`);
+  else void overlay.loadFile(join(__dirname, "renderer", "index.html"), { hash: "overlay" });
+}
+
+function syncOverlay() {
+  const { overlayEnabled, overlayOpacity } = store.data.settings;
+  if (overlayEnabled && !overlay) createOverlay();
+  else if (!overlayEnabled && overlay) overlay.close();
+  overlay?.setOpacity(overlayOpacity);
 }
 
 // ---------- IPC ----------
@@ -205,7 +279,9 @@ function setupIpc() {
     store.data.settings = { ...prev, ...patch };
     store.save();
     if (patch.logPath !== undefined && patch.logPath !== prev.logPath) startLog();
-    if (patch.screenshotHotkey !== undefined) registerHotkey();
+    if (patch.screenshotHotkey !== undefined || patch.overlayHotkey !== undefined) registerHotkeys();
+    if (patch.overlayEnabled !== undefined || patch.overlayOpacity !== undefined) syncOverlay();
+    if ("overlayPos" in patch && !patch.overlayPos) overlay?.setPosition(defaultOverlayPos().x, defaultOverlayPos().y);
     if (patch.alwaysOnTop !== undefined) win?.setAlwaysOnTop(patch.alwaysOnTop, "screen-saver");
     if (patch.league !== undefined && patch.league !== prev.league) void refreshPrices();
     push();
@@ -234,6 +310,16 @@ function setupIpc() {
   });
   ipcMain.handle("prices:refresh", () => refreshPrices());
   ipcMain.handle("folder:data", () => shell.openPath(app.getPath("userData")));
+  ipcMain.on("overlay:resize", (_, height: number) => {
+    if (!overlay || !Number.isFinite(height)) return;
+    overlay.setContentSize(OVERLAY_WIDTH, Math.min(600, Math.max(60, Math.ceil(height))));
+  });
+  ipcMain.on("main:show", () => {
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+  });
 }
 
 function createWindow() {
@@ -248,6 +334,11 @@ function createWindow() {
     webPreferences: { preload: join(__dirname, "preload.cjs"), contextIsolation: true, sandbox: true },
   });
   win.setAlwaysOnTop(store.data.settings.alwaysOnTop, "screen-saver");
+  // The overlay has no taskbar entry, so closing the main window quits the whole app.
+  win.on("closed", () => {
+    win = null;
+    app.quit();
+  });
   const devUrl = process.env.VITE_DEV_URL;
   if (devUrl) void win.loadURL(devUrl);
   else void win.loadFile(join(__dirname, "renderer", "index.html"));
@@ -258,6 +349,10 @@ function createWindow() {
       setTimeout(async () => {
         const img = await win!.webContents.capturePage();
         writeFileSync(smokeOut, img.toPNG());
+        if (overlay) {
+          writeFileSync(smokeOut.replace(/\.png$/, "-overlay.png"), (await overlay.webContents.capturePage()).toPNG());
+          writeFileSync(smokeOut.replace(/\.png$/, "-overlay.json"), JSON.stringify({ bounds: overlay.getBounds(), workArea: screen.getPrimaryDisplay().workArea }));
+        }
         app.quit();
       }, Number(process.env.POE2T_SMOKE_DELAY ?? 2500));
     });
@@ -275,8 +370,9 @@ app.whenReady().then(() => {
   });
   setupIpc();
   createWindow();
+  syncOverlay();
   startLog();
-  registerHotkey();
+  registerHotkeys();
   // Do not import whatever was on the clipboard before launch.
   void clipboard
     .readText()

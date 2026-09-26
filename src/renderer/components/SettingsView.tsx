@@ -9,6 +9,7 @@ export function SettingsView({ snap }: { snap: Snapshot }) {
   const [hotkey, setHotkey] = useState(settings.screenshotHotkey);
   const [favs, setFavs] = useState(settings.favoriteCurrencies.join("\n"));
   const [charName, setCharName] = useState(settings.characterName);
+  const [ovKey, setOvKey] = useState(settings.overlayHotkey);
 
   return (
     <div className="settings">
@@ -54,6 +55,29 @@ export function SettingsView({ snap }: { snap: Snapshot }) {
           <span className={status.hotkeyRegistered ? "ok" : "warn"}>{status.hotkeyRegistered ? "aktif" : "kayıtlı değil"}</span>
         </div>
         <p className="hint">Electron formatı: Ctrl+Shift+S, F9, Alt+F10… Map içindeyken çekilen görüntü o map'e, hideout'tayken sonraki map'e eklenir.</p>
+      </section>
+
+      <section>
+        <h3>Oyun üstü panel (overlay)</h3>
+        <label className="check">
+          <input type="checkbox" checked={settings.overlayEnabled} onChange={(e) => set({ overlayEnabled: e.target.checked })} />
+          Oyunun üstünde küçük paneli göster
+        </label>
+        <div className="row">
+          <span>Aç/kapa kısayolu</span>
+          <input value={ovKey} onChange={(e) => setOvKey(e.target.value)} />
+          <button onClick={() => set({ overlayHotkey: ovKey })}>Kaydet</button>
+          <span className={status.overlayHotkeyRegistered ? "ok" : "warn"}>{status.overlayHotkeyRegistered ? "aktif" : "kayıtlı değil"}</span>
+        </div>
+        <div className="row">
+          <span>Opaklık</span>
+          <input
+            type="range" min={0.4} max={1} step={0.05} value={settings.overlayOpacity}
+            onChange={(e) => set({ overlayOpacity: Number(e.target.value) })}
+          />
+          <button onClick={() => set({ overlayPos: undefined })}>Sağ üste geri al</button>
+        </div>
+        <p className="hint">Panel sürüklenerek taşınabilir, yeri hatırlanır. Oyun Windowed Fullscreen (borderless) modda olmalı; exclusive fullscreen'de görünmez. İlk 4 loot butonu panelde de var.</p>
       </section>
 
       <section>

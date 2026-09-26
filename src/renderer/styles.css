@@ -131,3 +131,29 @@ tr.detail > td { background: var(--panel); white-space: normal; }
 .settings { max-width: 760px; display: flex; flex-direction: column; gap: 14px; }
 .settings section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
 .check { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+
+/* ---------- Overlay window ---------- */
+html.overlay, html.overlay body, html.overlay #root { background: transparent; height: auto; overflow: hidden; }
+html.overlay body { font-size: 12px; user-select: none; }
+.ov {
+  background: rgba(18, 16, 14, .92);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 6px 8px 8px;
+  -webkit-app-region: drag; /* drag anywhere; buttons opt out below */
+}
+.ov button { -webkit-app-region: no-drag; }
+.ov-head { display: flex; align-items: center; gap: 6px; }
+.ov-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
+.ov-dot.live { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.ov-title { font-weight: 600; color: var(--gold-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov-meta { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ov-death { color: var(--bad); }
+.ov-btn { margin-left: auto; padding: 0 6px; font-size: 13px; line-height: 18px; }
+.ov-line { color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov-loot { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 6px; }
+.ov-loot button { padding: 3px 4px; font-size: 11px; display: flex; justify-content: space-between; gap: 2px; }
+.ov-loot button.has { border-color: var(--gold); background: #2c2418; }
+.ov-loot b { color: var(--gold-2); }
+.ov-total { margin-top: 5px; color: var(--muted); }
+.ov-total b { color: var(--gold-2); }

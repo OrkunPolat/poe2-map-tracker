@@ -109,6 +109,11 @@ export interface Settings {
   keepTabletsAfterRun: boolean;
   captureCurrencyFromClipboard: boolean;
   alwaysOnTop: boolean;
+  overlayEnabled: boolean;
+  overlayHotkey: string;
+  /** Last dragged position; undefined = top-right of the primary display. */
+  overlayPos?: { x: number; y: number };
+  overlayOpacity: number;
 }
 
 export interface PriceTable {

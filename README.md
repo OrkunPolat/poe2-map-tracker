@@ -12,6 +12,10 @@ Path of Exile 2 endgame tracker: which waystone (tier + mods) and tablets went i
 | Prices | poe.ninja PoE2 exchange API (quoted in Divine), refreshed every 30 min |
 | Screenshots | Global hotkey (default `Ctrl+Shift+S`), attached to the current/next map |
 
+## Overlay
+
+A small always-on-top panel (top-right by default, draggable, position remembered) shows the current map, timer, deaths, waystone/tablets and the first 4 loot buttons. Toggle with `Ctrl+Shift+O`. It never takes keyboard focus from the game. Requires the game in **Windowed Fullscreen**; exclusive fullscreen hides overlays.
+
 No memory reading, no input automation, no game file access. The app never sends keys to the game.
 
 ## Windows

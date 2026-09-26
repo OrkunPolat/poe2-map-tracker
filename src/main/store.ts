@@ -22,6 +22,9 @@ export const DEFAULT_SETTINGS: Settings = {
   keepTabletsAfterRun: false,
   captureCurrencyFromClipboard: false,
   alwaysOnTop: false,
+  overlayEnabled: true,
+  overlayHotkey: "Ctrl+Shift+O",
+  overlayOpacity: 0.9,
 };
 
 export class Store {

@@ -6,6 +6,7 @@ export interface Status {
   lastLogLineAt?: number;
   priceError?: string;
   hotkeyRegistered: boolean;
+  overlayHotkeyRegistered: boolean;
   leagues: string[];
 }
 
@@ -44,4 +45,6 @@ export interface Api {
   exportCsv(): Promise<string | undefined>;
   refreshPrices(): Promise<void>;
   openDataFolder(): Promise<void>;
+  resizeOverlay(height: number): void;
+  showMain(): void;
 }

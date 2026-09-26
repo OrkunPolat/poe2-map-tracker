@@ -14,6 +14,8 @@ const api: Api = {
   exportCsv: () => ipcRenderer.invoke("export:csv"),
   refreshPrices: () => ipcRenderer.invoke("prices:refresh"),
   openDataFolder: () => ipcRenderer.invoke("folder:data"),
+  resizeOverlay: (height) => ipcRenderer.send("overlay:resize", height),
+  showMain: () => ipcRenderer.send("main:show"),
 };
 
 contextBridge.exposeInMainWorld("api", api);

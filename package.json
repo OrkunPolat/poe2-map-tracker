@@ -1,7 +1,7 @@
 {
   "name": "poe2-map-tracker",
   "productName": "PoE2 Map Tracker",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Path of Exile 2 map, waystone, tablet and loot tracker",
   "private": true,
   "main": "dist/main.cjs",
@@ -18,14 +18,28 @@
   "build": {
     "appId": "dev.orkun.poe2maptracker",
     "productName": "PoE2 Map Tracker",
-    "directories": { "output": "release" },
-    "files": ["dist/**/*", "package.json"],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
     "win": {
-      "target": ["portable", "nsis"],
+      "target": [
+        "portable",
+        "nsis"
+      ],
       "signAndEditExecutable": false
     },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
-    "portable": { "artifactName": "PoE2-Map-Tracker-${version}-portable.exe" }
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "PoE2-Map-Tracker-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "PoE2-Map-Tracker-${version}-portable.exe"
+    }
   },
   "devDependencies": {
     "@types/node": "^26.6.3",
