@@ -13,6 +13,7 @@ const api: Api = {
   pickLogFile: () => ipcRenderer.invoke("log:pick"),
   exportCsv: () => ipcRenderer.invoke("export:csv"),
   refreshPrices: () => ipcRenderer.invoke("prices:refresh"),
+  itemHistory: (name) => ipcRenderer.invoke("prices:history", name),
   openDataFolder: () => ipcRenderer.invoke("folder:data"),
   checkUpdate: () => ipcRenderer.invoke("update:check"),
   stashRefresh: () => ipcRenderer.invoke("stash:refresh"),

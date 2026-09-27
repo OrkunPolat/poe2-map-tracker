@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 import type { Snapshot, UiEvent } from "../shared/ipc";
 import { isCurrency, isTablet, isWaystone, parseItem, toTablet, toWaystone } from "../shared/itemParser";
 import { classifyArea, parseLogLine, prettyAreaId } from "../shared/logParser";
-import { fetchLeagues, fetchPrices } from "../shared/prices";
+import { fetchItemHistory, fetchLeagues, fetchPrices } from "../shared/prices";
 import { runsToCsv } from "../shared/stats";
 import { reduce } from "../shared/tracker";
 import type { Settings, TrackerEvent, TrackerState } from "../shared/types";
@@ -24,7 +24,7 @@ import { parseWaystoneMods } from "../shared/waystoneModsParse.mjs";
 import type { WaystoneModFamily } from "../shared/waystoneDanger";
 import { emptyStash, minItemDiv, replaceTradeTabs, setItemQty, stashValueDiv, upsertTab } from "../shared/stash";
 import { diffQty, stashLootTotals, stashLootWarnings, stashQty, toStashLoot, type Qty } from "../shared/stashDiff";
-import type { PriceTable } from "../shared/types";
+import type { ItemHistory, PriceTable } from "../shared/types";
 
 // Test hooks: POE2T_DATA isolates the data dir, POE2T_LOG forces a log file, POE2T_SMOKE writes a screenshot and quits.
 if (process.env.POE2T_DATA) app.setPath("userData", resolve(process.env.POE2T_DATA));
@@ -173,6 +173,8 @@ function onClipboard(text: string) {
 function priceOf(name: string): number | undefined {
   return effPrices()?.divByName[name];
 }
+
+const historyCache = new Map<string, ItemHistory>();
 
 async function refreshPrices() {
   try {
@@ -650,6 +652,22 @@ function setupIpc() {
     return res.filePath;
   });
   ipcMain.handle("prices:refresh", () => refreshPrices());
+  ipcMain.handle("prices:history", async (_e, name: string) => {
+    const prices = store.data.prices;
+    const league = store.data.settings.league;
+    if (!prices || !league) return { error: "Önce fiyatlar yüklenmeli (poe.ninja)." };
+    const key = `${league}|${name}`;
+    const hit = historyCache.get(key);
+    // poe.ninja aggregates the exchange hourly, so a 30 minute cache never hides a new point for long.
+    if (hit && Date.now() - hit.fetchedAt < 30 * 60 * 1000) return hit;
+    try {
+      const h = await fetchItemHistory(league, name, prices, net.fetch as typeof fetch, USER_AGENT);
+      historyCache.set(key, h);
+      return h;
+    } catch (e) {
+      return hit ?? { error: (e as Error).message };
+    }
+  });
   ipcMain.handle("update:check", () => checkUpdate());
   ipcMain.handle("stash:refresh", () => refreshStash());
   ipcMain.handle("stash:checkSetup", () => refreshStash(true));

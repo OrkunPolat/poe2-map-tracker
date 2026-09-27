@@ -1,7 +1,8 @@
-import { useLayoutEffect, useRef, useState } from "react";
-import type { PriceTable } from "../../shared/types";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { ItemHistory, PriceTable } from "../../shared/types";
+import { PairChart } from "./PairChart";
 import { hourlyUnits, priceHistory } from "../../shared/trends";
-import { fmtDiv } from "../api";
+import { api, fmtDiv } from "../api";
 
 type Unit = "div" | "chaos";
 const UNIT_KEY = "itemDetailUnit";
@@ -24,40 +25,104 @@ export const fmtCompact = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >=
 
 export const fmtUnits = (n: number) => (n >= 10 ? Math.round(n).toLocaleString("tr-TR") : n.toFixed(1));
 
-/** Expanded row under an item: 7-day price chart in div or chaos, and how much of it trades per day. */
+const PAIR_NAME: Record<string, string> = { exalted: "Exalted Orb", chaos: "Chaos Orb", divine: "Divine Orb" };
+const PAIR_ORDER = ["exalted", "chaos", "divine"];
+const PAIR_KEY = "itemDetailPair";
+
+function loadPair(): string {
+  try {
+    return localStorage.getItem(PAIR_KEY) ?? "exalted";
+  } catch {
+    return "exalted";
+  }
+}
+
+/** Expanded row under an item: poe.ninja-style price/volume chart per currency pair, with a range slider. */
 export function ItemDetail({ name, qty, prices }: { name: string; qty?: number; prices?: PriceTable }) {
-  const [unit, setUnit] = useState<Unit>(loadUnit);
-  const pick = (u: Unit) => {
-    setUnit(u);
+  const [history, setHistory] = useState<ItemHistory | { error: string }>();
+  const [pairId, setPairId] = useState(loadPair);
+  const [range, setRange] = useState<[number, number]>();
+  const [big, setBig] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void api()
+      .itemHistory(name)
+      .then((h) => alive && setHistory(h));
+    return () => {
+      alive = false;
+    };
+  }, [name]);
+  const pick = (id: string) => {
+    setPairId(id);
     try {
-      localStorage.setItem(UNIT_KEY, u);
+      localStorage.setItem(PAIR_KEY, id);
     } catch {
       /* per-viewer convenience only */
     }
   };
-  const series = priceHistory(name, prices, unit);
   const perHour = hourlyUnits(name, prices);
   const perDay = perHour != null ? perHour * 24 : undefined;
   const vol = prices?.volumeByName?.[name];
+  const pairs = history && "pairs" in history ? [...history.pairs].sort((a, b) => PAIR_ORDER.indexOf(a.id) - PAIR_ORDER.indexOf(b.id)) : [];
+  const pair = pairs.find((p) => p.id === pairId) ?? pairs[0];
+  const icon = (n: string) => prices?.imageByName?.[n];
+  const pairName = pair ? (PAIR_NAME[pair.id] ?? pair.id) : "";
+
+  const chart = (height: number) =>
+    pair && <PairChart pair={pair} pairIcon={icon(pairName)} itemIcon={icon(name)} height={height} range={range} onZoom={setRange} />;
+  const head = pair && (
+    <div className="ninja-head">
+      <div className="ninja-pair">
+        {icon(pairName) && <img src={icon(pairName)} alt="" />}
+        <span>{pairName}</span>
+        <span className="swap">⇆</span>
+        {icon(name) && <img src={icon(name)} alt="" />}
+        <span className="ninja-item">{name}</span>
+      </div>
+      <div className="ninja-tools">
+        <button title="Büyüt" onClick={() => setBig(!big)}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+            {big ? <path d="M6 2v4H2M10 14v-4h4M6 6 1 1M10 10l5 5" /> : <path d="M10 1h5v5M6 15H1v-5M15 1 9 7M1 15l6-6" />}
+          </svg>
+        </button>
+        <button title="Aralığı sıfırla" onClick={() => setRange([0, 100])}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 1.8v2.8h2.8" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="item-detail">
-      <div className="item-detail-head">
-        <span className="muted small">Son 7 gün · poe.ninja</span>
-        <div className="seg">
-          {(["div", "chaos"] as Unit[]).map((u) => (
-            <button key={u} className={unit === u ? "on" : ""} onClick={() => pick(u)}>
-              {u}
+    <div className="item-detail" onClick={(e) => e.stopPropagation()}>
+      {pairs.length > 0 && (
+        <div className="ninja-tabs" role="tablist">
+          {pairs.map((p) => (
+            <button key={p.id} role="tab" aria-selected={p === pair} className={p === pair ? "on" : ""} onClick={() => pick(p.id)}>
+              {icon(PAIR_NAME[p.id] ?? "") && <img src={icon(PAIR_NAME[p.id] ?? "")} alt="" />}
+              {(PAIR_NAME[p.id] ?? p.id).replace(" Orb", "")}
             </button>
           ))}
         </div>
-      </div>
-      {series ? <Chart series={series} unit={unit} /> : <p className="muted small">Bu item için fiyat geçmişi yok.</p>}
+      )}
+      {!history && <p className="muted small">poe.ninja'dan geçmiş alınıyor…</p>}
+      {history && "error" in history && <FallbackChart name={name} prices={prices} note={history.error} />}
+      {pair && (
+        <div className="ninja-card">
+          {head}
+          <div className="ninja-body">{chart(380)}</div>
+        </div>
+      )}
+      {big && pair && (
+        <div className="ninja-modal" onClick={() => setBig(false)}>
+          <div className="ninja-card big" onClick={(e) => e.stopPropagation()}>
+            {head}
+            <div className="ninja-body">{chart(Math.max(420, Math.round(window.innerHeight * 0.7)))}</div>
+          </div>
+        </div>
+      )}
       <div className="item-detail-stats small">
-        {series && (
-          <span>
-            7 gün önce <b>{fmtUnit(series[0]!, unit)}</b> → bugün <b>{fmtUnit(series[series.length - 1]!, unit)}</b>
-          </span>
-        )}
         {perHour != null && vol != null && (
           <span>
             Saatlik işlem <b>~{fmtUnits(perHour)} adet</b> <span className="muted">({fmtDiv(vol)} div)</span>
@@ -65,12 +130,44 @@ export function ItemDetail({ name, qty, prices }: { name: string; qty?: number; 
         )}
         {perHour != null && perDay != null && qty && qty / perHour >= 0.05 ? (
           <span className={qty > perDay ? "warn" : "muted"}>
-            Senin {qty} adet = saatlik işlemin %{Math.round((qty / perHour!) * 100)}
+            Senin {qty} adet = saatlik işlemin %{Math.round((qty / perHour) * 100)}
             {qty > perDay ? " · hepsini bir günde satmak fiyatı düşürür" : ""}
           </span>
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** Offline fallback: the 7-day sparkline that comes with the price list. */
+function FallbackChart({ name, prices, note }: { name: string; prices?: PriceTable; note: string }) {
+  const [unit, setUnit] = useState<Unit>(loadUnit);
+  const series = priceHistory(name, prices, unit);
+  return (
+    <>
+      <div className="item-detail-head">
+        <span className="muted small">Son 7 gün · {note}</span>
+        <div className="seg">
+          {(["div", "chaos"] as Unit[]).map((u) => (
+            <button
+              key={u}
+              className={unit === u ? "on" : ""}
+              onClick={() => {
+                setUnit(u);
+                try {
+                  localStorage.setItem(UNIT_KEY, u);
+                } catch {
+                  /* per-viewer convenience only */
+                }
+              }}
+            >
+              {u}
+            </button>
+          ))}
+        </div>
+      </div>
+      {series ? <Chart series={series} unit={unit} /> : <p className="muted small">Bu item için fiyat geçmişi yok.</p>}
+    </>
   );
 }
 

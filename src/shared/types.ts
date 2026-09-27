@@ -209,6 +209,9 @@ export interface PriceTable {
   byCategory?: Record<string, Array<{ name: string; div: number }>>;
   /** Item name -> price change over the last 7 days in % (poe.ninja sparkline). */
   changeByName?: Record<string, number>;
+  /** Item name -> poe.ninja exchange category and details id (for the per-item price history). */
+  typeByName?: Record<string, string>;
+  detailsIdByName?: Record<string, string>;
   /** Item name -> daily % change vs 7 days ago, oldest first (poe.ninja sparkline, last = today). */
   sparkByName?: Record<string, number[]>;
   /** Item name -> traded volume in Divine per hour (poe.ninja "Volume / Hour"; how liquid it is). */
@@ -271,3 +274,17 @@ export type TrackerEvent =
   | { type: "addPendingCost"; name: string; qty: number; unitDiv: number }
   | { type: "clearPendingCosts" }
   | { type: "reuseTablets"; runId: string };
+
+/** One currency pair of an item on the Currency Exchange: price in that currency per item, per day. */
+export interface PricePair {
+  /** poe.ninja pair id: "divine", "exalted" or "chaos". */
+  id: string;
+  /** Oldest first. `rate` is pair currency per 1 item, `volume` is Divine traded that day. */
+  points: Array<{ ts: number; rate: number; volume: number }>;
+}
+
+export interface ItemHistory {
+  name: string;
+  fetchedAt: number;
+  pairs: PricePair[];
+}

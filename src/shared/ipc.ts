@@ -1,4 +1,4 @@
-import type { PriceTable, Settings, StashState, TrackerState } from "./types";
+import type { PriceTable, Settings, StashState, TrackerState, ItemHistory } from "./types";
 import type { WaystoneModFamily } from "./waystoneDanger";
 
 export interface UpdateInfo {
@@ -88,6 +88,8 @@ export interface Api {
   pickLogFile(): Promise<void>;
   exportCsv(): Promise<string | undefined>;
   refreshPrices(): Promise<void>;
+  /** poe.ninja daily price/volume history of one item per currency pair (cached in the main process). */
+  itemHistory(name: string): Promise<ItemHistory | { error: string }>;
   openDataFolder(): Promise<void>;
   checkUpdate(): Promise<void>;
   stashRefresh(): Promise<void>;

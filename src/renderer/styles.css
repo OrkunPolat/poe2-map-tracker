@@ -424,3 +424,25 @@ input.ov-val { width: 56px; flex: none; }
 .tab-card td.trend-cell { width: 56px; }
 .tab-card td.total-cell { width: 72px; }
 @container (max-width: 400px) { .tab-card td.unit-cell { display: none; } }
+
+/* poe.ninja-style pair chart */
+.ninja-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+.ninja-tabs button { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 12px; color: var(--text-2); font-size: 13px; margin-bottom: -1px; }
+.ninja-tabs button img { width: 18px; height: 18px; }
+.ninja-tabs button.on { color: var(--text); border-bottom-color: #4cc38a; }
+.ninja-tabs button:hover { color: var(--text); }
+.ninja-card { background: #161a20; border-radius: 6px; overflow: hidden; }
+.ninja-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #1f232b; padding: 10px 14px; }
+.ninja-pair { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 15px; color: #e8eaee; }
+.ninja-pair img { width: 28px; height: 28px; flex: none; }
+.ninja-pair .swap { color: #4cc38a; }
+.ninja-pair .ninja-item { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ninja-tools { display: flex; gap: 6px; flex: none; }
+.ninja-tools button { background: none; border: 0; padding: 4px; color: #c9ccd2; line-height: 0; }
+.ninja-tools button:hover { color: #fff; }
+.ninja-body { padding: 4px 6px 0; }
+.pair-chart { width: 100%; }
+.ninja-modal { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, .6); display: grid; place-items: center; padding: 32px; cursor: zoom-out; }
+.ninja-modal .ninja-card.big { width: min(1200px, 100%); cursor: default; }
+/* An open chart gets room of its own; the 10 rows above it stay visible and the rest still scroll. */
+.tab-rows:has(tr.detail-row) { max-height: 900px; }
