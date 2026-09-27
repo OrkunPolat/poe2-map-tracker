@@ -519,6 +519,19 @@ function tryRegister(accelerator: string, fn: () => void): boolean {
   }
 }
 
+/**
+ * Also binds the same keys with Alt (Option on a Mac) held: the player keeps Alt down in game for
+ * advanced mod descriptions, and the extra modifier would otherwise not match the shortcut.
+ */
+function tryRegisterWithAlt(accelerator: string, fn: () => void): boolean {
+  const ok = tryRegister(accelerator, fn);
+  if (ok && !/\b(alt|option)\b/i.test(accelerator)) {
+    const keys = accelerator.trim().split("+");
+    tryRegister([...keys.slice(0, -1), "Alt", keys[keys.length - 1]].join("+"), fn);
+  }
+  return ok;
+}
+
 // ---------- GeForce Now mode ----------
 // The game runs in the cloud, so there is no Client.txt: a hotkey stands in for the log's
 // "map generated" / "hideout" lines and everything downstream (timer, stash diff) is unchanged.
@@ -541,7 +554,7 @@ function registerHotkeys() {
   if (settings.playMode === "gfn") {
     status.gfnHotkeysRegistered = tryRegister(settings.gfnStartHotkey, gfnStart) && tryRegister(settings.gfnEndHotkey, gfnEnd);
   } else status.gfnHotkeysRegistered = undefined;
-  status.hotkeyRegistered = tryRegister(settings.screenshotHotkey, () => void takeScreenshot().catch(console.error));
+  status.hotkeyRegistered = tryRegisterWithAlt(settings.screenshotHotkey, () => void takeScreenshot().catch(console.error));
   status.stashHotkeyRegistered = tryRegister(settings.stashHotkey, () => void readStashTab());
   status.overlayHotkeyRegistered = tryRegister(settings.overlayHotkey, () => {
     store.data.settings.overlayEnabled = !store.data.settings.overlayEnabled;
