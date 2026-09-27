@@ -457,3 +457,38 @@ input.ov-val { width: 56px; flex: none; }
   .ninja-pair { flex: 1 1 auto; }
   .ninja-ranges { order: 3; width: 100%; margin-left: 0; justify-content: flex-end; }
 }
+
+/* Economy page (poe.ninja-style exchange overview) */
+.eco-search { width: 240px; }
+.eco-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 16px; align-items: start; }
+.eco-cats { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 12px; }
+.eco-cats button { display: flex; align-items: center; gap: 10px; background: none; border: 0; border-radius: 8px; padding: 6px 10px; text-align: left; color: var(--text-2); }
+.eco-cats button:hover { background: var(--panel-2, var(--panel)); color: var(--text); }
+.eco-cats button.on { background: var(--accent-bg); color: var(--text); }
+.eco-cats img, .eco-noicon { width: 26px; height: 26px; flex: none; }
+.eco-cat-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eco-count { font-size: 11px; color: var(--muted); }
+.eco-table-card { padding: 6px 12px; }
+.eco-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.eco-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 10px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.eco-table th.num { text-align: right; }
+.eco-table th:nth-child(2) { width: 110px; }
+.eco-table th:nth-child(3) { width: 140px; }
+.eco-table th:nth-child(4) { width: 110px; }
+.eco-table th:nth-child(5) { width: 130px; }
+.eco-table th.sortable { cursor: pointer; user-select: none; }
+.eco-table th.sortable:hover, .eco-table th.on { color: var(--text); }
+.eco-table th .arrow { margin-left: 4px; }
+.eco-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.eco-table td.num { text-align: right; white-space: nowrap; }
+.eco-table tr.clickable { cursor: pointer; }
+.eco-table tr.clickable:hover td, .eco-table tr.open td { background: var(--panel-3); }
+.eco-table tr.detail-row td { background: var(--panel-3); padding: 6px 12px 14px; }
+.eco-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.eco-name img { width: 30px; height: 30px; flex: none; }
+.eco-name .name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eco-change { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.spark polyline { fill: none; stroke-width: 1.5; }
+.spark.up polyline { stroke: var(--pos); }
+.spark.down polyline { stroke: var(--neg); }
+@media (max-width: 900px) { .eco-layout { grid-template-columns: minmax(0, 1fr); } .eco-cats { position: static; flex-direction: row; flex-wrap: wrap; } }

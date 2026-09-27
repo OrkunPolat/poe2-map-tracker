@@ -18,6 +18,7 @@ import { Onboarding } from "./components/Onboarding";
 import { RunsTable } from "./components/RunsTable";
 import { SettingsView } from "./components/SettingsView";
 import { StashView } from "./components/StashView";
+import { EconomyView } from "./components/EconomyView";
 import { StatsView } from "./components/StatsView";
 import { GFN_FARMS } from "../shared/gfn";
 
@@ -26,6 +27,7 @@ const PAGES = [
   ["history", "Geçmiş", "history"],
   ["stats", "Analiz", "chart"],
   ["stash", "Stash", "box"],
+  ["economy", "Ekonomi", "coins"],
   ["settings", "Ayarlar", "settings"],
 ] as const;
 type Page = (typeof PAGES)[number][0];
@@ -118,6 +120,7 @@ export function App() {
         {page === "history" && <HistoryView snap={snap} now={now} runs={leagueRuns} leaguePicker={leaguePicker} />}
         {page === "stats" && <StatsView runs={counted(leagueRuns)} prices={prices} gapMin={settings.sessionGapMin} leaguePicker={leaguePicker} />}
         {page === "stash" && <StashView snap={snap} onSetup={() => setPage("settings")} />}
+        {page === "economy" && <EconomyView snap={snap} />}
         {page === "settings" && <SettingsView snap={snap} onWizard={() => setWizard(true)} />}
       </main>
     </div>

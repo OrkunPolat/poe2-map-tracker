@@ -21,7 +21,7 @@ const fmtUnit = (v: number, unit: Unit) => {
 };
 
 /** 13764 -> "13,8k": short enough for a narrow column. */
-export const fmtCompact = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(".", ",")}k` : fmtUnits(n));
+export const fmtCompact = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : fmtUnits(n));
 
 export const fmtUnits = (n: number) => (n >= 10 ? Math.round(n).toLocaleString("tr-TR") : n.toFixed(1));
 
