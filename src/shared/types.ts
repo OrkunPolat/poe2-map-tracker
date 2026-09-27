@@ -287,4 +287,6 @@ export interface ItemHistory {
   name: string;
   fetchedAt: number;
   pairs: PricePair[];
+  /** Our own hourly record per pair id (only while the app was running); empty until it has data. */
+  hourly?: Record<string, PricePair["points"]>;
 }

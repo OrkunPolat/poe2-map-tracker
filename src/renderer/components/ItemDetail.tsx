@@ -28,6 +28,12 @@ export const fmtUnits = (n: number) => (n >= 10 ? Math.round(n).toLocaleString("
 const PAIR_NAME: Record<string, string> = { exalted: "Exalted Orb", chaos: "Chaos Orb", divine: "Divine Orb" };
 const PAIR_ORDER = ["exalted", "chaos", "divine"];
 const PAIR_KEY = "itemDetailPair";
+const RANGES = [
+  { label: "24 sa", ms: 24 * 3600 * 1000 },
+  { label: "3 gün", ms: 3 * 24 * 3600 * 1000 },
+  { label: "7 gün", ms: 7 * 24 * 3600 * 1000 },
+  { label: "Tümü", ms: 0 },
+];
 
 function loadPair(): string {
   try {
@@ -68,8 +74,22 @@ export function ItemDetail({ name, qty, prices }: { name: string; qty?: number; 
   const icon = (n: string) => prices?.imageByName?.[n];
   const pairName = pair ? (PAIR_NAME[pair.id] ?? pair.id) : "";
 
+  const hourly = history && "pairs" in history && pair ? history.hourly?.[pair.id] : undefined;
+  const allTs = [...(pair?.points ?? []), ...(hourly ?? [])].map((p) => p.ts);
+  const t0 = allTs.length ? Math.min(...allTs) : 0;
+  const t1 = allTs.length ? Math.max(...allTs) : 0;
+  const [rangeLabel, setRangeLabel] = useState<string>();
+  const pickRange = (r: (typeof RANGES)[number]) => {
+    setRangeLabel(r.label);
+    if (!r.ms || t1 <= t0) return setRange([0, 100]);
+    setRange([Math.max(0, (1 - r.ms / (t1 - t0)) * 100), 100]);
+  };
+  const onZoom = (r: [number, number]) => {
+    setRangeLabel(undefined);
+    setRange(r);
+  };
   const chart = (height: number) =>
-    pair && <PairChart pair={pair} pairIcon={icon(pairName)} itemIcon={icon(name)} height={height} range={range} onZoom={setRange} />;
+    pair && <PairChart pair={pair} hourly={hourly} pairIcon={icon(pairName)} itemIcon={icon(name)} height={height} range={range} onZoom={onZoom} />;
   const head = pair && (
     <div className="ninja-head">
       <div className="ninja-pair">
@@ -79,13 +99,20 @@ export function ItemDetail({ name, qty, prices }: { name: string; qty?: number; 
         {icon(name) && <img src={icon(name)} alt="" />}
         <span className="ninja-item">{name}</span>
       </div>
+      <div className="ninja-ranges">
+        {RANGES.map((r) => (
+          <button key={r.label} className={rangeLabel === r.label ? "on" : ""} onClick={() => pickRange(r)}>
+            {r.label}
+          </button>
+        ))}
+      </div>
       <div className="ninja-tools">
         <button title="Büyüt" onClick={() => setBig(!big)}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
             {big ? <path d="M6 2v4H2M10 14v-4h4M6 6 1 1M10 10l5 5" /> : <path d="M10 1h5v5M6 15H1v-5M15 1 9 7M1 15l6-6" />}
           </svg>
         </button>
-        <button title="Aralığı sıfırla" onClick={() => setRange([0, 100])}>
+        <button title="Aralığı sıfırla" onClick={() => pickRange(RANGES[RANGES.length - 1]!)}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
             <path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 1.8v2.8h2.8" />
           </svg>

@@ -446,3 +446,14 @@ input.ov-val { width: 56px; flex: none; }
 .ninja-modal .ninja-card.big { width: min(1200px, 100%); cursor: default; }
 /* An open chart gets room of its own; the 10 rows above it stay visible and the rest still scroll. */
 .tab-rows:has(tr.detail-row) { max-height: 900px; }
+.ninja-ranges { display: flex; gap: 2px; margin-left: auto; }
+.ninja-ranges button { background: none; border: 1px solid transparent; border-radius: 6px; padding: 2px 8px; font-size: 12px; color: #9aa0aa; }
+.ninja-ranges button:hover { color: #e8eaee; }
+.ninja-ranges button.on { color: #e8eaee; border-color: #3b404a; background: #262a33; }
+.ninja-card { container-type: inline-size; }
+.ninja-pair span { white-space: nowrap; }
+@container (max-width: 620px) {
+  .ninja-head { flex-wrap: wrap; row-gap: 6px; }
+  .ninja-pair { flex: 1 1 auto; }
+  .ninja-ranges { order: 3; width: 100%; margin-left: 0; justify-content: flex-end; }
+}

@@ -1,7 +1,8 @@
 import {
   BrowserWindow, ClipboardItem, app, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, net, protocol, screen, shell,
 } from "electron";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { hourlySeries, recordPrices, type PriceLog } from "../shared/priceLog";
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Snapshot, UiEvent } from "../shared/ipc";
@@ -176,6 +177,28 @@ function priceOf(name: string): number | undefined {
 
 const historyCache = new Map<string, ItemHistory>();
 
+// ---------- Hourly price record (poe.ninja only keeps daily points) ----------
+let priceLog: PriceLog | undefined;
+const priceLogFile = () => join(app.getPath("userData"), "price-history.json");
+function loadPriceLog() {
+  try {
+    if (existsSync(priceLogFile())) priceLog = JSON.parse(readFileSync(priceLogFile(), "utf8")) as PriceLog;
+  } catch (e) {
+    console.error("price-history.json unreadable, starting a new one", e);
+  }
+}
+function logPrices(prices: PriceTable) {
+  // Items in the stash are the ones the charts open for; the base currencies convert between pairs.
+  const names = new Set<string>(["Chaos Orb", "Exalted Orb", "Divine Orb"]);
+  for (const t of store.data.stash?.tabs ?? []) for (const it of t.items) names.add(it.name);
+  priceLog = recordPrices(priceLog, prices, names, Date.now());
+  try {
+    writeFileSync(priceLogFile(), JSON.stringify(priceLog));
+  } catch (e) {
+    console.error("price-history.json not written", e);
+  }
+}
+
 async function refreshPrices() {
   try {
     status.leagues = await fetchLeagues(net.fetch as typeof fetch, USER_AGENT);
@@ -188,6 +211,7 @@ async function refreshPrices() {
       settings.league = status.leagues[0] ?? settings.league;
     }
     store.data.prices = await fetchPrices(settings.league, net.fetch as typeof fetch, USER_AGENT);
+    logPrices(store.data.prices);
     status.priceError = undefined;
     store.save();
   } catch (e) {
@@ -657,15 +681,19 @@ function setupIpc() {
     const league = store.data.settings.league;
     if (!prices || !league) return { error: "Önce fiyatlar yüklenmeli (poe.ninja)." };
     const key = `${league}|${name}`;
+    const withHourly = (h: ItemHistory): ItemHistory => ({
+      ...h,
+      hourly: Object.fromEntries(["exalted", "chaos", "divine"].map((id) => [id, hourlySeries(priceLog, name, id)])),
+    });
     const hit = historyCache.get(key);
     // poe.ninja aggregates the exchange hourly, so a 30 minute cache never hides a new point for long.
-    if (hit && Date.now() - hit.fetchedAt < 30 * 60 * 1000) return hit;
+    if (hit && Date.now() - hit.fetchedAt < 30 * 60 * 1000) return withHourly(hit);
     try {
       const h = await fetchItemHistory(league, name, prices, net.fetch as typeof fetch, USER_AGENT);
       historyCache.set(key, h);
-      return h;
+      return withHourly(h);
     } catch (e) {
-      return hit ?? { error: (e as Error).message };
+      return hit ? withHourly(hit) : { error: (e as Error).message };
     }
   });
   ipcMain.handle("update:check", () => checkUpdate());
@@ -797,6 +825,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   store = new Store(app.getPath("userData"));
+  loadPriceLog();
   // Trade tabs outside the tracked price range (the old 999 gem tab) are dropped right away.
   if (store.data.stash) store.data.stash = replaceTradeTabs(store.data.stash, [], new Set());
   protocol.handle("shot", (req) => {
