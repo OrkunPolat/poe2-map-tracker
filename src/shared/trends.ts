@@ -54,3 +54,37 @@ export function farmTrends(runs: Run[], prices: PriceTable | undefined): Map<str
   }
   return new Map([...acc].filter(([, a]) => a.w > 0).map(([k, a]) => [k, a.wc / a.w]));
 }
+
+/**
+ * Daily prices over the last 7 days, oldest first, from poe.ninja's sparkline. The sparkline is
+ * % change against the price 7 days ago, so the series is anchored on today's price; the first
+ * point is that base day. In chaos each day is divided by that day's Chaos Orb price.
+ */
+export function priceHistory(name: string, prices: PriceTable | undefined, unit: "div" | "chaos"): number[] | undefined {
+  const series = (n: string): number[] | undefined => {
+    const now = prices?.divByName[n];
+    const spark = prices?.sparkByName?.[n];
+    if (now == null || !spark?.length) return undefined;
+    const last = spark[spark.length - 1]!;
+    const base = now / (1 + last / 100);
+    return [base, ...spark.map((p) => base * (1 + p / 100))];
+  };
+  const item = series(name);
+  if (!item || unit === "div") return item;
+  const chaos = series("Chaos Orb");
+  const chaosNow = prices?.divByName["Chaos Orb"];
+  if (chaos && chaos.length === item.length) return item.map((v, i) => v / chaos[i]!);
+  return chaosNow ? item.map((v) => v / chaosNow) : undefined;
+}
+
+const BASE_CURRENCIES = new Set(["Divine Orb", "Chaos Orb", "Exalted Orb"]);
+
+/** Units traded per day on poe.ninja's exchange (daily Divine volume / unit price). */
+export function dailyUnits(name: string, prices: PriceTable | undefined): number | undefined {
+  // For the exchange's base currencies poe.ninja reports the whole market's volume, not the item's.
+  if (BASE_CURRENCIES.has(name)) return undefined;
+  const vol = prices?.volumeByName?.[name];
+  const unit = prices?.divByName[name];
+  if (vol == null || !unit) return undefined;
+  return vol / unit;
+}

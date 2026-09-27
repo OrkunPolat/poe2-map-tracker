@@ -761,7 +761,10 @@ function createWindow() {
   if (smokeOut) {
     win.webContents.once("did-finish-load", () => {
       setTimeout(async () => {
-        if (process.env.POE2T_SMOKE_JS) console.log("[smoke-js]", JSON.stringify(await win!.webContents.executeJavaScript(process.env.POE2T_SMOKE_JS)));
+        if (process.env.POE2T_SMOKE_JS) console.log("[smoke-js]", JSON.stringify(await win!.webContents.executeJavaScript(process.env.POE2T_SMOKE_JS).catch((e: Error) => `error: ${e.message}`)));
+        // A backgrounded window may still show its last painted frame; force a fresh one.
+        win!.webContents.invalidate();
+        await new Promise((r) => setTimeout(r, 300));
         const img = await win!.webContents.capturePage();
         writeFileSync(smokeOut, img.toPNG());
         if (overlay) {

@@ -14,7 +14,7 @@ export const STASH_CATEGORIES = [
 
 interface ExchangeOverview {
   core?: { primary?: string };
-  lines?: Array<{ id: string; primaryValue?: number; volumePrimaryValue?: number; sparkline?: { totalChange?: number } }>;
+  lines?: Array<{ id: string; primaryValue?: number; volumePrimaryValue?: number; sparkline?: { totalChange?: number; data?: number[] } }>;
   items?: Array<{ id: string; name: string; image?: string }>;
 }
 
@@ -54,6 +54,7 @@ export async function fetchPrices(league: string, fetchFn: typeof fetch, userAge
   const imageByName: Record<string, string> = {};
   const changeByName: Record<string, number> = {};
   const volumeByName: Record<string, number> = {};
+  const sparkByName: Record<string, number[]> = {};
   const errors: string[] = [];
   await Promise.all(
     PRICE_TYPES.map(async (type) => {
@@ -69,6 +70,7 @@ export async function fetchPrices(league: string, fetchFn: typeof fetch, userAge
           const n = nameById.get(line.id);
           if (!n) continue;
           if (typeof line.sparkline?.totalChange === "number") changeByName[n] = line.sparkline.totalChange;
+          if (line.sparkline?.data?.length && line.sparkline.data.every((v) => typeof v === "number")) sparkByName[n] = line.sparkline.data;
           if (typeof line.volumePrimaryValue === "number") volumeByName[n] = line.volumePrimaryValue;
         }
         Object.assign(divByName, prices);
@@ -83,5 +85,5 @@ export async function fetchPrices(league: string, fetchFn: typeof fetch, userAge
   if (errors.length === PRICE_TYPES.length) throw new Error(`poe.ninja unreachable (${errors[0]})`);
   divByName["Divine Orb"] = 1;
   const ex = divByName["Exalted Orb"];
-  return { league, fetchedAt: Date.now(), divByName, byCategory, imageByName, changeByName, volumeByName, exPerDiv: ex ? 1 / ex : undefined };
+  return { league, fetchedAt: Date.now(), divByName, byCategory, imageByName, changeByName, volumeByName, sparkByName, exPerDiv: ex ? 1 / ex : undefined };
 }

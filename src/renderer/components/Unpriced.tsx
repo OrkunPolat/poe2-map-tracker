@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Snapshot } from "../../shared/ipc";
+import { Collapsible } from "./Collapsible";
 import { api, fmtDiv } from "../api";
 
 /** Items seen in the stash or in map loot that poe.ninja has no price for (uniques, gems...). */
@@ -36,11 +37,7 @@ export function UnpricedCard({ snap }: { snap: Snapshot }) {
   const names = unpricedNames(snap);
   if (names.length === 0) return null;
   return (
-    <section className="card">
-      <div className="card-head">
-        <h3>Fiyatı olmayan item'lar · {names.length}</h3>
-        <span className="muted small">poe.ninja'da yok; bir kez değer gir, stash ve map kazancında kullanılır</span>
-      </div>
+    <Collapsible id="unpriced" defaultOpen={false} title={`Fiyatı olmayan item'lar · ${names.length}`} aside="poe.ninja'da yok; bir kez değer gir, stash ve map kazancında kullanılır">
       <div className="tab-rows">
       <table className="loot-table">
         <tbody>
@@ -56,7 +53,7 @@ export function UnpricedCard({ snap }: { snap: Snapshot }) {
         </tbody>
       </table>
       </div>
-    </section>
+    </Collapsible>
   );
 }
 

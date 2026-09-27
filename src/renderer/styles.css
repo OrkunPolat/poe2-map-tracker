@@ -223,7 +223,9 @@ tr.clickable { cursor: pointer; }
 
 /* ---------- stash ---------- */
 .stash { display: flex; flex-direction: column; gap: 16px; }
-.stash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+.stash-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+@media (max-width: 1400px) { .stash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .stash-grid { grid-template-columns: minmax(0, 1fr); } }
 .tab-card h3 { margin: 0; display: flex; align-items: center; gap: 8px; }
 .tab-card .small { font-size: 12px; margin: 4px 0 8px; }
 .empty-tab { opacity: .5; }
@@ -374,3 +376,51 @@ input.ov-val { width: 56px; flex: none; }
 .tab-rows .loot-table { margin-top: 0; }
 .loot-table.fixed { table-layout: fixed; }
 .loot-table td.name-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Item detail: click a stash row to open its 7-day chart */
+.loot-table tr.clickable { cursor: pointer; }
+.loot-table tr.clickable:hover td { background: var(--panel-3); }
+.loot-table tr.open td, .tab-card .loot-table tr.open td { background: var(--panel-3); border-bottom: none; }
+.loot-table tr.detail-row td { background: var(--panel-3); padding: 4px 10px 12px; }
+.item-detail { display: grid; gap: 6px; }
+.item-detail-head { display: flex; align-items: center; justify-content: space-between; }
+.seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 2px 10px; font-size: 12px; background: transparent; color: var(--text-2); }
+.seg button.on { background: var(--accent-bg); color: var(--accent-2); }
+.price-chart-wrap { width: 100%; min-height: 150px; }
+.price-chart { display: block; overflow: visible; }
+.price-chart .line { fill: none; stroke-width: 2; }
+.price-chart .grid { stroke: var(--line); stroke-width: 1; }
+.price-chart .val { fill: var(--text-2); font-size: 10px; font-variant-numeric: tabular-nums; }
+.price-chart circle { stroke: none; }
+.price-chart.up .line { stroke: var(--pos); }
+.price-chart.up .area, .price-chart.up circle { fill: var(--pos); }
+.price-chart.down .line { stroke: var(--neg); }
+.price-chart.down .area, .price-chart.down circle { fill: var(--neg); }
+.price-chart .area { opacity: .12; }
+.price-chart .axis { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.price-chart .area { pointer-events: none; }
+.item-detail-stats { display: flex; flex-wrap: wrap; gap: 4px 16px; white-space: normal; }
+.hint-table td:nth-child(2) { width: 52px; }
+.hint-table td:nth-child(3) { width: 72px; }
+.hint-table td:nth-child(4) { width: 76px; }
+.hint-table td:nth-child(5) { width: 64px; }
+.hint-table td:nth-child(6) { width: 76px; }
+
+/* Collapsible cards */
+.collapse-head { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; color: inherit; }
+.collapse-head h3 { margin: 0; white-space: nowrap; }
+.collapse-head:hover h3 { color: var(--accent-2); }
+.collapse-head .chev { color: var(--muted); width: 12px; }
+.collapse-aside { margin-left: auto; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.collapsible.closed { padding-top: 14px; padding-bottom: 14px; }
+.collapse-body { margin-top: 12px; }
+
+/* Tab card columns: the unit price gives way first when the card is narrow (it is in the row detail too) */
+.tab-card { container-type: inline-size; }
+.tab-card .loot-table td { padding-left: 5px; padding-right: 5px; }
+.tab-card td.qty-cell { width: 40px; }
+.tab-card td.unit-cell { width: 76px; }
+.tab-card td.trend-cell { width: 56px; }
+.tab-card td.total-cell { width: 72px; }
+@container (max-width: 400px) { .tab-card td.unit-cell { display: none; } }

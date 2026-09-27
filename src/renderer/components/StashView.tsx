@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { filterStash, itemVisible, minItemDiv, stashValueDiv, tabValueDiv } from "../../shared/stash";
 import type { Snapshot } from "../../shared/ipc";
 import type { CurrencyUnit, PriceTable, Settings, StashTab } from "../../shared/types";
@@ -11,6 +11,9 @@ import { PageHead } from "../App";
 import { Icon } from "./Icons";
 import { tabPrice } from "../../shared/tradeStash";
 import { UnpricedCard } from "./Unpriced";
+import { Collapsible } from "./Collapsible";
+import { ItemDetail, fmtCompact } from "./ItemDetail";
+import { dailyUnits } from "../../shared/trends";
 
 /** Special tabs worth reading (Map, Gem and Unique tabs are left out on purpose). */
 const EXPECTED = ["Currency", "Essences", "Abyss", "Ritual", "Delirium", "Breach", "Expedition", "Fragments", "Runes", "SoulCores", "Idols"];
@@ -118,6 +121,7 @@ function TabCard({ tab, prices, now, minDiv, autoSkip }: { tab: StashTab; prices
   );
   const unread = tab.items.filter((i) => i.qty == null).length;
   const trade = tab.source === "trade";
+  const [open, setOpen] = useState<string>();
   return (
     <section className="card tab-card">
       <div className="card-head">
@@ -141,23 +145,22 @@ function TabCard({ tab, prices, now, minDiv, autoSkip }: { tab: StashTab; prices
       </p>
       <div className="tab-rows">
       <table className="loot-table fixed">
-        <colgroup>
-          <col />
-          <col style={{ width: 48 }} />
-          <col style={{ width: 132 }} />
-          <col style={{ width: 84 }} />
-        </colgroup>
         <tbody>
           {rows.map((it) => {
             const unit = prices?.divByName[it.name];
             return (
-              <tr key={it.name} className={it.qty == null ? "unread" : ""}>
+              <Fragment key={it.name}>
+              <tr
+                className={`clickable ${it.qty == null ? "unread" : ""} ${open === it.name ? "open" : ""}`}
+                onClick={() => setOpen(open === it.name ? undefined : it.name)}
+              >
                 <td className="name-cell" title={it.name}>{it.name}</td>
-                <td>
+                <td className="qty-cell">
                   {trade ? (
                     <span className="qty-text">{it.qty ?? "?"}</span>
                   ) : (
                   <input
+                    onClick={(e) => e.stopPropagation()}
                     className="qty"
                     disabled={trade}
                     title={trade ? "Trade sitesinden geliyor; Yenile ile güncellenir" : undefined}
@@ -171,11 +174,20 @@ function TabCard({ tab, prices, now, minDiv, autoSkip }: { tab: StashTab; prices
                   />
                   )}
                 </td>
-                <td className="num muted">
-                  {unit != null ? fmtValue(unit, prices?.exPerDiv) : "–"} <Trend change={prices?.changeByName?.[it.name]} />
+                <td className="num muted unit-cell">{unit != null ? fmtValue(unit, prices?.exPerDiv) : "–"}</td>
+                <td className="num trend-cell">
+                  <Trend change={prices?.changeByName?.[it.name]} />
                 </td>
-                <td className="num">{unit != null && it.qty ? fmtValue(unit * it.qty, prices?.exPerDiv) : ""}</td>
+                <td className="num total-cell">{unit != null && it.qty ? fmtValue(unit * it.qty, prices?.exPerDiv) : ""}</td>
               </tr>
+              {open === it.name && (
+                <tr className="detail-row">
+                  <td colSpan={5}>
+                    <ItemDetail name={it.name} qty={it.qty} prices={prices} />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
         </tbody>
@@ -225,14 +237,19 @@ export function TradeSetup({ account }: { account: string }) {
 /** Exiled Tools-style: what in the stash is losing or gaining value this week. */
 function SellHints({ snap, minDiv }: { snap: Snapshot; minDiv: number }) {
   const hints = sellHints(filterStash(snap.stash, snap.prices, minDiv), snap.prices);
+  const [open, setOpen] = useState<string>();
   if (hints.length === 0) return null;
   const sell = hints.filter((h) => h.advice === "sell").slice(0, 6);
   const hold = hints.filter((h) => h.advice === "hold").slice(0, 6);
-  const row = (h: (typeof hints)[number]) => (
-    <tr key={h.name}>
-      <td>{h.name}</td>
+  const row = (h: (typeof hints)[number]) => {
+    const perDay = dailyUnits(h.name, snap.prices);
+    return (
+    <Fragment key={h.name}>
+    <tr className={`clickable ${open === h.name ? "open" : ""}`} onClick={() => setOpen(open === h.name ? undefined : h.name)}>
+      <td className="name-cell" title={h.name}>{h.name}</td>
       <td className="num">{h.qty}×</td>
-      <td className="num">{fmtDiv(h.valueDiv)} div</td>
+      <td className="num" title="Elindeki adetlerin bugünkü değeri">{fmtDiv(h.valueDiv)} div</td>
+      <td className="num muted" title="poe.ninja'da günde el değiştiren adet">{perDay != null ? `${fmtCompact(perDay)}/gün` : "–"}</td>
       <td className="num">
         <Trend change={h.change} />
       </td>
@@ -241,18 +258,23 @@ function SellHints({ snap, minDiv }: { snap: Snapshot; minDiv: number }) {
         {fmtDiv(h.impactDiv)} div
       </td>
     </tr>
-  );
+    {open === h.name && (
+      <tr className="detail-row">
+        <td colSpan={6}>
+          <ItemDetail name={h.name} qty={h.qty} prices={snap.prices} />
+        </td>
+      </tr>
+    )}
+    </Fragment>
+    );
+  };
   return (
-    <section className="card">
-      <div className="card-head">
-        <h3>Fiyat trendi (7 gün)</h3>
-        <span className="muted small">poe.ninja · değeri 1 div üstü ve %10'dan fazla oynayanlar</span>
-      </div>
+    <Collapsible id="trends" title="Fiyat trendi (7 gün)" aside="poe.ninja · değeri 1 div üstü ve %10'dan fazla oynayanlar · satıra tıkla: grafik">
       <div className="hint-grid">
         {sell.length > 0 && (
           <div>
             <h4 className="warn">Düşüyor, satmayı düşün</h4>
-            <table className="loot-table">
+            <table className="loot-table fixed hint-table">
               <tbody>{sell.map(row)}</tbody>
             </table>
           </div>
@@ -260,13 +282,13 @@ function SellHints({ snap, minDiv }: { snap: Snapshot; minDiv: number }) {
         {hold.length > 0 && (
           <div>
             <h4 className="ok">Yükseliyor, tutmaya değer</h4>
-            <table className="loot-table">
+            <table className="loot-table fixed hint-table">
               <tbody>{hold.map(row)}</tbody>
             </table>
           </div>
         )}
       </div>
-    </section>
+    </Collapsible>
   );
 }
 
