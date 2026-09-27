@@ -5,20 +5,12 @@ import AppKit
 import Foundation
 import Vision
 
-// Optional crop "x y w h" in 0..1 of the image (y from the top): the second, sharper pass reads only the tooltip.
 guard CommandLine.arguments.count > 1,
   let img = NSImage(contentsOfFile: CommandLine.arguments[1]),
-  let full = img.cgImage(forProposedRect: nil, context: nil, hints: nil)
+  let cg = img.cgImage(forProposedRect: nil, context: nil, hints: nil)
 else {
-  FileHandle.standardError.write("usage: poe2-ocr <image> [x y w h]\n".data(using: .utf8)!)
+  FileHandle.standardError.write("usage: poe2-ocr <image>\n".data(using: .utf8)!)
   exit(1)
-}
-var cg = full
-let a = CommandLine.arguments.dropFirst(2).compactMap { Double($0) }
-if a.count == 4 {
-  let W = Double(full.width), H = Double(full.height)
-  let r = CGRect(x: a[0] * W, y: a[1] * H, width: a[2] * W, height: a[3] * H).integral
-  if let c = full.cropping(to: r) { cg = c }
 }
 let req = VNRecognizeTextRequest()
 req.recognitionLevel = .accurate

@@ -14,15 +14,6 @@ const api: Api = {
   exportCsv: () => ipcRenderer.invoke("export:csv"),
   refreshPrices: () => ipcRenderer.invoke("prices:refresh"),
   itemHistory: (name) => ipcRenderer.invoke("prices:history", name),
-  priceCheckGet: () => ipcRenderer.invoke("pricecheck:get"),
-  onPriceCheck: (cb) => {
-    const listener = (_: unknown, s: Parameters<typeof cb>[0]) => cb(s);
-    ipcRenderer.on("pricecheck:state", listener);
-    return () => ipcRenderer.removeListener("pricecheck:state", listener);
-  },
-  priceCheckSearch: (q) => ipcRenderer.invoke("pricecheck:search", q),
-  priceCheckClose: () => ipcRenderer.send("pricecheck:close"),
-  priceCheckAddToMap: (div) => ipcRenderer.invoke("pricecheck:addToMap", div),
   openDataFolder: () => ipcRenderer.invoke("folder:data"),
   checkUpdate: () => ipcRenderer.invoke("update:check"),
   stashRefresh: () => ipcRenderer.invoke("stash:refresh"),

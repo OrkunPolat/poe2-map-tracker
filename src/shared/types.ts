@@ -163,8 +163,6 @@ export interface Settings {
   alwaysOnTop: boolean;
   overlayEnabled: boolean;
   overlayHotkey: string;
-  /** Price check: reads the item tooltip under the cursor (Alt / Option held works too). */
-  priceCheckHotkey: string;
   /** Last dragged position; undefined = top-right of the primary display. */
   overlayPos?: { x: number; y: number };
   overlayOpacity: number;

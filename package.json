@@ -43,8 +43,7 @@
     },
     "asarUnpack": [
       "dist/stashWorker.cjs",
-      "node_modules/**",
-      "dist/bin/**"
+      "node_modules/**"
     ],
     "mac": {
       "target": [
@@ -58,8 +57,7 @@
       "category": "public.app-category.games",
       "identity": "-",
       "artifactName": "PoE2-Map-Tracker-${version}-mac.${ext}",
-      "hardenedRuntime": false,
-      "x64ArchFiles": "**/dist/bin/poe2-ocr"
+      "hardenedRuntime": false
     },
     "dmg": {
       "title": "PoE2 Map Tracker ${version}"

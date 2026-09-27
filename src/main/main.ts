@@ -3,8 +3,6 @@ import {
 } from "electron";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { hourlySeries, recordPrices, type PriceLog } from "../shared/priceLog";
-import { addCheckedToMap, closePriceCheck, initPriceCheck, priceCheckState, priceCheckWindow, search, startPriceCheck } from "./priceCheckMain";
-import type { PriceCheckQuery } from "../shared/priceCheck";
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Snapshot, UiEvent } from "../shared/ipc";
@@ -558,7 +556,6 @@ function registerHotkeys() {
   } else status.gfnHotkeysRegistered = undefined;
   status.hotkeyRegistered = tryRegisterWithAlt(settings.screenshotHotkey, () => void takeScreenshot().catch(console.error));
   status.stashHotkeyRegistered = tryRegister(settings.stashHotkey, () => void readStashTab());
-  status.priceCheckHotkeyRegistered = tryRegisterWithAlt(settings.priceCheckHotkey, () => void startPriceCheck());
   status.overlayHotkeyRegistered = tryRegister(settings.overlayHotkey, () => {
     store.data.settings.overlayEnabled = !store.data.settings.overlayEnabled;
     store.save();
@@ -660,7 +657,7 @@ function setupIpc() {
     if (patch.logPath !== undefined && patch.logPath !== prev.logPath) startLog();
     if (
       patch.screenshotHotkey !== undefined || patch.overlayHotkey !== undefined || patch.stashHotkey !== undefined ||
-      patch.playMode !== undefined || patch.gfnStartHotkey !== undefined || patch.gfnEndHotkey !== undefined || patch.priceCheckHotkey !== undefined
+      patch.playMode !== undefined || patch.gfnStartHotkey !== undefined || patch.gfnEndHotkey !== undefined
     )
       registerHotkeys();
     if (patch.overlayEnabled !== undefined || patch.overlayOpacity !== undefined) syncOverlay();
@@ -692,10 +689,6 @@ function setupIpc() {
     return res.filePath;
   });
   ipcMain.handle("prices:refresh", () => refreshPrices());
-  ipcMain.handle("pricecheck:get", () => priceCheckState());
-  ipcMain.handle("pricecheck:search", (_e, q: PriceCheckQuery) => search(q));
-  ipcMain.on("pricecheck:close", () => closePriceCheck());
-  ipcMain.handle("pricecheck:addToMap", (_e, div: number) => addCheckedToMap(div));
   ipcMain.handle("prices:history", async (_e, name: string) => {
     const prices = store.data.prices;
     const league = store.data.settings.league;
@@ -823,21 +816,6 @@ function createWindow() {
   if (devUrl) void win.loadURL(devUrl);
   else void win.loadFile(join(__dirname, "renderer", "index.html"), process.env.POE2T_HASH ? { hash: process.env.POE2T_HASH } : process.env.POE2T_TAB ? { hash: `tab=${process.env.POE2T_TAB}` } : {});
 
-  // Test hook: open the price check on a saved screenshot, optionally search its first mods, and capture it.
-  if (process.env.POE2T_PC_IMAGE) {
-    win.webContents.once("did-finish-load", async () => {
-      await startPriceCheck();
-      const n = Number(process.env.POE2T_PC_SEARCH ?? 0);
-      const st = priceCheckState();
-      if (n > 0 && st.query) await search({ ...st.query, mods: st.query.mods.map((m, i) => ({ ...m, enabled: i < n })) });
-      await new Promise((r) => setTimeout(r, Number(process.env.POE2T_SMOKE_DELAY ?? 2500)));
-      const pw = priceCheckWindow();
-      if (pw && process.env.POE2T_SMOKE) writeFileSync(process.env.POE2T_SMOKE, (await pw.webContents.capturePage()).toPNG());
-      console.log("[pricecheck]", JSON.stringify({ phase: priceCheckState().phase, error: priceCheckState().error, total: priceCheckState().total, n: priceCheckState().listings?.length }));
-      app.quit();
-    });
-    return;
-  }
   const smokeOut = process.env.POE2T_SMOKE;
   if (smokeOut) {
     win.webContents.once("did-finish-load", () => {
@@ -860,24 +838,6 @@ function createWindow() {
 
 app.whenReady().then(() => {
   store = new Store(app.getPath("userData"));
-  initPriceCheck({
-    league: () => store.data.settings.league,
-    prices: () => effPrices(),
-    userAgent: USER_AGENT,
-    preload: join(__dirname, "preload.cjs"),
-    loadRenderer: (w, hash) => {
-      const devUrl = process.env.VITE_DEV_URL;
-      if (devUrl) void w.loadURL(`${devUrl}#${hash}`);
-      else void w.loadFile(join(__dirname, "renderer", "index.html"), { hash });
-    },
-    addToMap: (name, valueDiv) => {
-      const s = store.data.state;
-      const runId = s.activeRunId ?? s.runs[s.runs.length - 1]?.id;
-      if (!runId) return false;
-      handleUi({ type: "addDrop", runId, name, valueDiv });
-      return true;
-    },
-  });
   loadPriceLog();
   // Trade tabs outside the tracked price range (the old 999 gem tab) are dropped right away.
   if (store.data.stash) store.data.stash = replaceTradeTabs(store.data.stash, [], new Set());

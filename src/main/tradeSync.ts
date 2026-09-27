@@ -12,20 +12,7 @@ const searchLimiter = new RateLimiter();
 const fetchLimiter = new RateLimiter();
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/**
- * A price check the player is waiting on goes first: background stash reads hold back while one
- * is recent, so they do not eat the search budget the player needs next.
- */
-let foregroundUntil = 0;
-export function holdBackground(ms: number) {
-  foregroundUntil = Math.max(foregroundUntil, Date.now() + ms);
-}
-
-async function call<T>(limiter: RateLimiter, url: string, userAgent: string, body?: unknown, onWait?: (s: number) => void, foreground = false): Promise<T> {
-  while (!foreground && Date.now() < foregroundUntil) {
-    onWait?.(Math.ceil((foregroundUntil - Date.now()) / 1000));
-    await sleep(Math.min(1000, foregroundUntil - Date.now()));
-  }
+async function call<T>(limiter: RateLimiter, url: string, userAgent: string, body?: unknown, onWait?: (s: number) => void): Promise<T> {
   for (let attempt = 0; attempt < 4; attempt++) {
     const wait = limiter.waitMs();
     if (wait > 0) {
@@ -191,24 +178,4 @@ export async function otherPublicTabs(
     }
   }
   return [...byTab.values()];
-}
-
-// ---------- Price check (foreground) ----------
-
-/** Seconds until the next search is allowed right now (0 = go), for the price check window. */
-export const searchWaitSeconds = () => Math.ceil(searchLimiter.waitMs() / 1000);
-
-export async function priceSearch(
-  league: string,
-  body: unknown,
-  userAgent: string,
-  onWait: (s: number) => void,
-): Promise<{ id: string; total: number; result: string[] }> {
-  holdBackground(90_000);
-  return call<SearchResult>(searchLimiter, `${API}/search/poe2/${encodeURIComponent(league)}`, userAgent, body, onWait, true);
-}
-
-export async function priceFetch(ids: string[], queryId: string, userAgent: string, onWait: (s: number) => void): Promise<unknown> {
-  holdBackground(90_000);
-  return call<unknown>(fetchLimiter, `${API}/fetch/${ids.slice(0, 10).join(",")}?query=${queryId}`, userAgent, undefined, onWait, true);
 }
