@@ -13,7 +13,7 @@ import { tabPrice } from "../../shared/tradeStash";
 import { UnpricedCard } from "./Unpriced";
 import { Collapsible } from "./Collapsible";
 import { ItemDetail, fmtCompact } from "./ItemDetail";
-import { dailyUnits } from "../../shared/trends";
+import { hourlyUnits } from "../../shared/trends";
 
 /** Special tabs worth reading (Map, Gem and Unique tabs are left out on purpose). */
 const EXPECTED = ["Currency", "Essences", "Abyss", "Ritual", "Delirium", "Breach", "Expedition", "Fragments", "Runes", "SoulCores", "Idols"];
@@ -242,14 +242,14 @@ function SellHints({ snap, minDiv }: { snap: Snapshot; minDiv: number }) {
   const sell = hints.filter((h) => h.advice === "sell").slice(0, 6);
   const hold = hints.filter((h) => h.advice === "hold").slice(0, 6);
   const row = (h: (typeof hints)[number]) => {
-    const perDay = dailyUnits(h.name, snap.prices);
+    const perHour = hourlyUnits(h.name, snap.prices);
     return (
     <Fragment key={h.name}>
     <tr className={`clickable ${open === h.name ? "open" : ""}`} onClick={() => setOpen(open === h.name ? undefined : h.name)}>
       <td className="name-cell" title={h.name}>{h.name}</td>
       <td className="num">{h.qty}×</td>
       <td className="num" title="Elindeki adetlerin bugünkü değeri">{fmtDiv(h.valueDiv)} div</td>
-      <td className="num muted" title="poe.ninja'da günde el değiştiren adet">{perDay != null ? `${fmtCompact(perDay)}/gün` : "–"}</td>
+      <td className="num muted" title="Currency Exchange'de saatte el değiştiren adet (poe.ninja)">{perHour != null ? `${fmtCompact(perHour)}/sa` : "–"}</td>
       <td className="num">
         <Trend change={h.change} />
       </td>

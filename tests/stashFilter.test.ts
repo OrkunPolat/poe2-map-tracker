@@ -30,7 +30,7 @@ describe("stash filter", () => {
   });
 });
 
-import { dailyUnits, priceHistory } from "../src/shared/trends";
+import { hourlyUnits, priceHistory } from "../src/shared/trends";
 describe("price history", () => {
   const p = {
     league: "x", fetchedAt: 0,
@@ -46,7 +46,7 @@ describe("price history", () => {
     expect(priceHistory("Omen", p, "chaos")!.map((v) => Math.round(v))).toEqual([20, 20, 30, 20]);
   });
   it("turns Divine volume into units", () => {
-    expect(dailyUnits("Omen", p)).toBe(20);
+    expect(hourlyUnits("Omen", p)).toBe(20);
     expect(priceHistory("Nope", p, "div")).toBeUndefined();
   });
 });

@@ -211,7 +211,7 @@ export interface PriceTable {
   changeByName?: Record<string, number>;
   /** Item name -> daily % change vs 7 days ago, oldest first (poe.ninja sparkline, last = today). */
   sparkByName?: Record<string, number[]>;
-  /** Item name -> traded volume in Divine over the last day (how liquid it is). */
+  /** Item name -> traded volume in Divine per hour (poe.ninja "Volume / Hour"; how liquid it is). */
   volumeByName?: Record<string, number>;
   /** Item name -> icon URL (poe.ninja CDN), used by the stash reader. */
   imageByName?: Record<string, string>;

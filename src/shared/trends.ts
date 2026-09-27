@@ -79,8 +79,8 @@ export function priceHistory(name: string, prices: PriceTable | undefined, unit:
 
 const BASE_CURRENCIES = new Set(["Divine Orb", "Chaos Orb", "Exalted Orb"]);
 
-/** Units traded per day on poe.ninja's exchange (daily Divine volume / unit price). */
-export function dailyUnits(name: string, prices: PriceTable | undefined): number | undefined {
+/** Units traded per hour on the Currency Exchange (poe.ninja "Volume / Hour" in Divine / unit price). */
+export function hourlyUnits(name: string, prices: PriceTable | undefined): number | undefined {
   // For the exchange's base currencies poe.ninja reports the whole market's volume, not the item's.
   if (BASE_CURRENCIES.has(name)) return undefined;
   const vol = prices?.volumeByName?.[name];

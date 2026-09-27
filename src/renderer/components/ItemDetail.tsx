@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { PriceTable } from "../../shared/types";
-import { dailyUnits, priceHistory } from "../../shared/trends";
+import { hourlyUnits, priceHistory } from "../../shared/trends";
 import { fmtDiv } from "../api";
 
 type Unit = "div" | "chaos";
@@ -36,7 +36,8 @@ export function ItemDetail({ name, qty, prices }: { name: string; qty?: number; 
     }
   };
   const series = priceHistory(name, prices, unit);
-  const perDay = dailyUnits(name, prices);
+  const perHour = hourlyUnits(name, prices);
+  const perDay = perHour != null ? perHour * 24 : undefined;
   const vol = prices?.volumeByName?.[name];
   return (
     <div className="item-detail">
@@ -57,14 +58,14 @@ export function ItemDetail({ name, qty, prices }: { name: string; qty?: number; 
             7 gün önce <b>{fmtUnit(series[0]!, unit)}</b> → bugün <b>{fmtUnit(series[series.length - 1]!, unit)}</b>
           </span>
         )}
-        {perDay != null && vol != null && (
+        {perHour != null && vol != null && (
           <span>
-            Günlük işlem <b>~{fmtUnits(perDay)} adet</b> <span className="muted">({fmtDiv(vol)} div)</span>
+            Saatlik işlem <b>~{fmtUnits(perHour)} adet</b> <span className="muted">({fmtDiv(vol)} div)</span>
           </span>
         )}
-        {perDay != null && qty && qty / perDay >= 0.01 ? (
+        {perHour != null && perDay != null && qty && qty / perHour >= 0.05 ? (
           <span className={qty > perDay ? "warn" : "muted"}>
-            Senin {qty} adet = günlük işlemin %{Math.round((qty / perDay) * 100)}
+            Senin {qty} adet = saatlik işlemin %{Math.round((qty / perHour!) * 100)}
             {qty > perDay ? " · hepsini bir günde satmak fiyatı düşürür" : ""}
           </span>
         ) : null}
