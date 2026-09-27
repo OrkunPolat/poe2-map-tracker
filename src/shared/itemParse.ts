@@ -35,6 +35,11 @@ export interface ParsedMod {
   raw: string;
   section: ModSection;
   statId?: string;
+  /**
+   * Same text in other groups (implicit / rune / enchant): above the explicit mods the tooltip does not
+   * say which one a line is without its colour, so the search accepts any of them.
+   */
+  altIds?: string[];
   /** Trade stat text with # for numbers, e.g. "# to maximum Life". */
   statText?: string;
   values: number[];
@@ -153,6 +158,11 @@ export class StatMatcher {
     }
   }
 
+  /** Every stat with exactly this text in the given groups. */
+  exactAll(tmpl: string, groups: string[]): StatEntry[] {
+    return (this.exact.get(tmpl) ?? []).filter((e) => groups.includes(e.type));
+  }
+
   /** Best stat for a template among the given groups, preferring the earlier group on ties. */
   match(tmpl: string, groups: string[]): { e: StatEntry; score: number } | undefined {
     const rank = (e: StatEntry) => {
@@ -180,6 +190,20 @@ export class StatMatcher {
 
 // ---------- tooltip parsing ----------
 
+/**
+ * Where to read again, sharper: around the "Class: Item Level" line, wide enough for the
+ * PREFIX / SUFFIX labels on the left, from the name down to the flavour text. [x, y, w, h] in 0..1.
+ */
+export function tooltipCrop(lines: OcrLine[]): [number, number, number, number] | undefined {
+  const h = lines.find((l) => HEADER.test(l.text));
+  if (!h) return undefined;
+  const cx = (h.x0 + h.x1) / 2;
+  const half = Math.max(0.14, (h.x1 - h.x0) * 1.5);
+  const x = Math.max(0, cx - half);
+  const y = Math.max(0, h.y - 0.08);
+  return [x, y, Math.min(1 - x, half * 2), Math.min(1 - y, 0.62)];
+}
+
 const HEADER = /^(.+?):\s*ITEM LEVEL\s*(\d+)/i;
 const SECTION_WORDS = ["prefix", "suffix", "unique", "crafted", "desecrated", "fractured"];
 /** Advanced descriptions put a PREFIX / SUFFIX / UNIQUE label left of each mod group; OCR may drop a letter. */
@@ -201,7 +225,9 @@ function tooltipLines(lines: OcrLine[]): { head: OcrLine[]; header?: OcrLine; bo
   if (hi < 0) return { head: [], body: sorted, labels: [] };
   const header = sorted[hi]!;
   const cx = (header.x0 + header.x1) / 2;
-  const centred = (l: OcrLine) => Math.abs((l.x0 + l.x1) / 2 - cx) < 0.06;
+  // Tooltip lines are centred on the same axis; the tolerance scales with how large the tooltip is in the image.
+  const tol = Math.max(0.02, (header.x1 - header.x0) * 0.35);
+  const centred = (l: OcrLine) => Math.abs((l.x0 + l.x1) / 2 - cx) < tol;
   // Name lines: up to two centred lines right above the "Class: Item Level" line (other text may sit beside them).
   const head = sorted.slice(0, hi).filter((l) => centred(l) && header.y - l.y < 0.12).slice(-2);
   const body: OcrLine[] = [];
@@ -223,6 +249,10 @@ export function parseTooltip(lines: OcrLine[], matcher: StatMatcher, items: Item
   const { head, header, body, labels } = tooltipLines(lines);
   const hm = header ? HEADER.exec(cleanOcr(header.text)) : null;
   const firstLabelY = labels.length ? Math.min(...labels.map((l) => l.y)) : undefined;
+  // The explicit mods start at PREFIX (or UNIQUE). If OCR missed that label and only SUFFIX was read,
+  // lines above it could be prefixes or implicits: search those as either.
+  const firstLabel = labels.find((l) => l.y === firstLabelY)?.text.trim().toLowerCase() ?? "";
+  const sectionSure = firstLabelY != null && ["prefix", "unique"].some((k) => similarity(firstLabel, k) >= 0.7);
   const reqY = body.find((l) => /^REQUIRES/i.test(l.text))?.y ?? -1;
   const item: ParsedItem = {
     itemClass: hm ? titleCase(hm[1]!.trim()) : undefined,
@@ -263,13 +293,14 @@ export function parseTooltip(lines: OcrLine[], matcher: StatMatcher, items: Item
     if (l.y <= reqY || PROPERTY.test(text) || /^REQUIRES/i.test(text) || text.length < 6) continue;
     const section: ModSection = firstLabelY != null && l.y > firstLabelY ? "explicit" : firstLabelY != null ? "implicit" : "explicit";
     const groups = firstLabelY == null ? [...EXPLICIT_GROUPS, ...IMPLICIT_GROUPS] : section === "implicit" ? IMPLICIT_GROUPS : EXPLICIT_GROUPS;
-    const mod = matchLine(text, matcher, groups);
-    if (mod) item.mods.push({ ...mod, raw: l.text, section: firstLabelY == null ? (IMPLICIT_GROUPS.includes(mod.group) ? "implicit" : "explicit") : section });
+    const unsure = !sectionSure && section === "implicit";
+    const mod = matchLine(text, matcher, unsure ? [...EXPLICIT_GROUPS, ...IMPLICIT_GROUPS] : groups, unsure);
+    if (mod) item.mods.push({ ...mod, raw: l.text, section: firstLabelY == null || unsure ? (IMPLICIT_GROUPS.includes(mod.group) ? "implicit" : "explicit") : section });
   }
   return item;
 }
 
-function matchLine(text: string, matcher: StatMatcher, groups: string[]): (Omit<ParsedMod, "raw" | "section"> & { group: string }) | undefined {
+function matchLine(text: string, matcher: StatMatcher, groups: string[], anyGroup = false): (Omit<ParsedMod, "raw" | "section"> & { group: string }) | undefined {
   const t = templateOf(text);
   let m = matcher.match(t.tmpl, groups);
   let values = t.values;
@@ -284,8 +315,10 @@ function matchLine(text: string, matcher: StatMatcher, groups: string[]): (Omit<
   }
   if (!m || m.score < MIN_SCORE) return undefined;
   const range = t.ranges.find((r) => r) ?? undefined;
+  const same = matcher.exactAll(norm(m.e.text.split("\n")[0]!), groups).map((e) => e.id).filter((id) => id !== m!.e.id);
   return {
     statId: m.e.id,
+    altIds: same.length && (groups === IMPLICIT_GROUPS || anyGroup) ? same : undefined,
     statText: m.e.text,
     values,
     range,

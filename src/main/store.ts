@@ -35,6 +35,8 @@ export const DEFAULT_SETTINGS: Settings = {
   alwaysOnTop: false,
   overlayEnabled: true,
   overlayHotkey: "Ctrl+Shift+O",
+  // Exiled Exchange 2's key: Alt (Option) is already down for advanced mod descriptions.
+  priceCheckHotkey: "Alt+D",
   overlayOpacity: 0.9,
   stashHotkey: "Ctrl+Shift+T",
   tradeAccount: "",

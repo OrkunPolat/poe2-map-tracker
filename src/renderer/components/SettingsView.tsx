@@ -180,6 +180,7 @@ function OverlaySettings({ snap }: { snap: Snapshot }) {
   const set = useSet();
   const [ovKey, setOvKey] = useState(settings.overlayHotkey);
   const [shotKey, setShotKey] = useState(settings.screenshotHotkey);
+  const [pcKey, setPcKey] = useState(settings.priceCheckHotkey);
   return (
     <section className="card">
       <Field label="Overlay" hint="Oyun Windowed Fullscreen modda olmalı. Panel sürüklenerek taşınır, yeri hatırlanır.">
@@ -198,6 +199,16 @@ function OverlaySettings({ snap }: { snap: Snapshot }) {
           <input value={ovKey} onChange={(e) => setOvKey(e.target.value)} />
           <button onClick={() => set({ overlayHotkey: ovKey })}>Kaydet</button>
           <HotkeyState ok={status.overlayHotkeyRegistered} />
+        </div>
+      </Field>
+      <Field
+        label="Fiyat kontrolü"
+        hint="Fareyi item'ın üstünde tut ve bas. Mac'te Alt = Option (⌥); oyunda Option basılıyken modların aralıkları da okunur. İlk kullanımda Mac ekran kaydı izni ister."
+      >
+        <div className="row">
+          <input value={pcKey} onChange={(e) => setPcKey(e.target.value)} />
+          <button onClick={() => set({ priceCheckHotkey: pcKey })}>Kaydet</button>
+          <HotkeyState ok={!!status.priceCheckHotkeyRegistered} />
         </div>
       </Field>
       <Field label="Ekran görüntüsü" hint="Map içindeyken o map'e, hideout'tayken sonraki map'e eklenir.">

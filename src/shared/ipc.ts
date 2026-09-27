@@ -1,3 +1,4 @@
+import type { PriceCheckQuery, PriceCheckState } from "./priceCheck";
 import type { PriceTable, Settings, StashState, TrackerState, ItemHistory } from "./types";
 import type { WaystoneModFamily } from "./waystoneDanger";
 
@@ -24,6 +25,7 @@ export interface Status {
   priceError?: string;
   hotkeyRegistered: boolean;
   overlayHotkeyRegistered: boolean;
+  priceCheckHotkeyRegistered?: boolean;
   stashHotkeyRegistered: boolean;
   gfnHotkeysRegistered?: boolean;
   /** Set while a stash tab is being read. */
@@ -88,6 +90,12 @@ export interface Api {
   pickLogFile(): Promise<void>;
   exportCsv(): Promise<string | undefined>;
   refreshPrices(): Promise<void>;
+  priceCheckGet(): Promise<PriceCheckState>;
+  onPriceCheck(cb: (s: PriceCheckState) => void): () => void;
+  priceCheckSearch(q: PriceCheckQuery): Promise<void>;
+  priceCheckClose(): void;
+  /** Books the checked item as a valuable drop of the current map; false when there is no map. */
+  priceCheckAddToMap(valueDiv: number): Promise<boolean>;
   /** poe.ninja daily price/volume history of one item per currency pair (cached in the main process). */
   itemHistory(name: string): Promise<ItemHistory | { error: string }>;
   openDataFolder(): Promise<void>;
