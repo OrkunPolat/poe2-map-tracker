@@ -1,9 +1,29 @@
-import { closeSync, existsSync, openSync, readSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } from "node:fs";
+import { join, win32 } from "node:path";
+
+/**
+ * Steam libraries the user added on other drives ("D:\\Games\\SteamLibrary"), read from Steam's own
+ * list, so a game installed outside the default folders is still found.
+ */
+export function steamLibraryRoots(vdf: string): string[] {
+  return [...vdf.matchAll(/"path"\s+"([^"]+)"/g)].map((m) => win32.join(m[1]!.replace(/\\\\/g, "\\"), "steamapps", "common", "Path of Exile 2"));
+}
+
+function steamLibraries(): string[] {
+  for (const f of ["C:\\Program Files (x86)\\Steam\\steamapps\\libraryfolders.vdf", "C:\\Program Files\\Steam\\steamapps\\libraryfolders.vdf"]) {
+    try {
+      if (existsSync(f)) return steamLibraryRoots(readFileSync(f, "utf8"));
+    } catch {
+      /* unreadable Steam config: fall back to the fixed list */
+    }
+  }
+  return [];
+}
 
 /** Common Windows install locations for the PoE2 log; the most recently written one wins. */
 export function detectLogPath(): string | undefined {
   const roots = [
+    ...steamLibraries(),
     "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Path of Exile 2",
     "C:\\Program Files\\Steam\\steamapps\\common\\Path of Exile 2",
     "C:\\Program Files (x86)\\Grinding Gear Games\\Path of Exile 2",

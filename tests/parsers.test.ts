@@ -219,3 +219,24 @@ describe("partial trade reads", () => {
     expect(replaceTradeTabs(before, [t("~price 991 divine Expedition", 5)]).tabs).toHaveLength(1); // full read: gem tab gone = no longer public
   });
 });
+
+import { steamLibraryRoots } from "../src/main/logTail";
+describe("steam libraries", () => {
+  it("finds game folders on other drives from libraryfolders.vdf", () => {
+    const vdf = `"libraryfolders"
+{
+	"0"
+	{
+		"path"		"C:\\\\Program Files (x86)\\\\Steam"
+	}
+	"1"
+	{
+		"path"		"D:\\\\Games\\\\SteamLibrary"
+	}
+}`;
+    expect(steamLibraryRoots(vdf)).toEqual([
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Path of Exile 2",
+      "D:\\Games\\SteamLibrary\\steamapps\\common\\Path of Exile 2",
+    ]);
+  });
+});
